@@ -138,6 +138,8 @@ QCefViewPrivate::createCefBrowser(QCefView* view, const QString& url, const QCef
     return;
   }
 
+  isMainFrameLoaded_ = true;
+
   // install global event filter
   qApp->installEventFilter(this);
 
@@ -251,6 +253,19 @@ QCefViewPrivate::onCefBrowserCreated(CefRefPtr<CefBrowser> browser, QWindow* win
       browser->GetHost()->CloseBrowser(true);
       return;
     }
+
+    connect(ncw.qBrowserWindow_, &QCefWindow::sigResizeCefWindow,
+            window, [this, window](qint32 width, qint32 heigth) {
+      window->setProperty("newWidth", width);
+      window->setProperty("newHeigth", heigth);
+      QTimer::singleShot(100, window, [this, window]() {
+        if (isMainFrameLoaded_) {
+          qint32 width = window->property("newWidth").toInt();
+          qint32 heigth = window->property("newHeigth").toInt();
+          window->resize(width, heigth);
+        }
+      });
+    });
 
     // adjust size/mask and attach to cef window
     ncw.qBrowserWindow_->applyMask(q_ptr->mask());

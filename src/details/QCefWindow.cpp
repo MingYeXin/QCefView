@@ -1,4 +1,4 @@
-#include "QCefWindow.h"
+﻿#include "QCefWindow.h"
 
 #if defined(Q_OS_WINDOWS)
 #include <windows.h>
@@ -105,13 +105,7 @@ QCefWindow::syncCefWindowPosOnExpose()
     qDebug() << "------------- width:" << windowWidth << " x " << windowScaleFactor << " = " << width;
     qDebug() << "------------- height:" << windowHeight << " x " << windowScaleFactor << " = " << height;
 
-    ::SetWindowPos((HWND)(cefWindow_->winId()),
-                   NULL,
-                   0,
-                   0,
-                   width,
-                   height,
-                   SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSENDCHANGING | SWP_DEFERERASE);
+    emit sigResizeCefWindow(width, height);
   }
 #endif
 }
@@ -145,13 +139,7 @@ QCefWindow::syncCefWindowPosOnResize()
     // qDebug() << "------------- width:" << windowWidth << " x " << windowScaleFactor << " = " << width;
     // qDebug() << "------------- height:" << windowHeight << " x " << windowScaleFactor << " = " << height;
 
-    ::SetWindowPos((HWND)(cefWindow_->winId()),
-                   NULL,
-                   0,
-                   0,
-                   width,
-                   height,
-                   SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSENDCHANGING | SWP_DEFERERASE);
+    emit sigResizeCefWindow(width, height);
   }
 #endif
 }

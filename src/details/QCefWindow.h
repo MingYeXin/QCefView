@@ -10,6 +10,8 @@
 
 class QCefWindow : public QWindow
 {
+  Q_OBJECT
+
 public:
   using QWindow::QWindow;
 
@@ -37,4 +39,7 @@ protected:
 private:
   QWidget* cefWidget_ = nullptr;
   QWindow* cefWindow_ = nullptr;
+
+signals:
+  void sigResizeCefWindow(qint32 width, qint32 heigth);
 };

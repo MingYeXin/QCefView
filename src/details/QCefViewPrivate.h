@@ -68,6 +68,8 @@ public:
   /// </summary>
   CefRefPtr<CefBrowser> pCefBrowser_ = nullptr;
 
+  bool isMainFrameLoaded_ = false;
+
   /// <summary>
   ///
   /// </summary>
