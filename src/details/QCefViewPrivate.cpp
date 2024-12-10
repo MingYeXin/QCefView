@@ -257,12 +257,25 @@ QCefViewPrivate::onCefBrowserCreated(CefRefPtr<CefBrowser> browser, QWindow* win
     connect(ncw.qBrowserWindow_, &QCefWindow::sigResizeCefWindow,
             window, [this, window](qint32 width, qint32 heigth) {
       window->setProperty("newWidth", width);
-      window->setProperty("newHeigth", heigth);
+      window->setProperty("newHeight", heigth);
       QTimer::singleShot(100, window, [this, window]() {
         if (isMainFrameLoaded_) {
-          qint32 width = window->property("newWidth").toInt();
-          qint32 heigth = window->property("newHeigth").toInt();
-          window->resize(width, heigth);
+          if (window) {
+              // resize window
+            qint32 width = window->property("newWidth").toInt();
+            qint32 height = window->property("newHeight").toInt();
+#ifdef Q_OS_WIN
+            ::SetWindowPos((HWND)(window->winId()),
+                           NULL,
+                           0,
+                           0,
+                           width,
+                           height,
+                           SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSENDCHANGING | SWP_DEFERERASE);
+#else
+            window->resize(width, height);
+#endif // Q_OS_WIN
+          }
         }
       });
     });
