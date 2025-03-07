@@ -116,12 +116,12 @@ QCefViewPrivate::createCefBrowser(QCefView* view, const QString& url, const QCef
       } else {
         qWarning() << "Failed to create hardware renderer, will fallback to software renderer";
       }
-    } else {
-      qInfo() << "Hardware Acceleration is disabled";
-    }
 #else
       qWarning() << "Hardware Acceleration is supported only on CEF version 125+";
 #endif
+    } else {
+      qInfo() << "Hardware Acceleration is disabled";
+    }
 #endif
 
     // if hardware renderer is not enabled or failed to create it

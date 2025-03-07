@@ -439,4 +439,4 @@ QCefSetting::hardwareAcceleration() const
   Q_D(const QCefSetting);
   return d->hardwareAcceleration_;
 }
-#endif]
+#endif

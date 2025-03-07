@@ -1,4 +1,4 @@
-#include "MainWindow.h"
+﻿#include "MainWindow.h"
 
 #include <QCoreApplication>
 #include <QDebug>
@@ -65,7 +65,9 @@ MainWindow::createLeftCefView()
 
   QCefSetting setting;
   setting.setWindowlessFrameRate(1000);
+#if CEF_VERSION_MAJOR >= 125
   setting.setHardwareAcceleration(false);
+#endif
   // setting.setBackgroundColor(Qt::magenta);
 
   m_pLeftCefViewWidget = new CefViewWidget("https://www.testufo.com/", &setting, this);
@@ -97,7 +99,9 @@ MainWindow::createRightCefView()
   setting.setPlugins(false);
 #endif
   setting.setWindowlessFrameRate(1000);
+#if CEF_VERSION_MAJOR >= 125
   setting.setHardwareAcceleration(true);
+#endif
   QColor background(0, 255, 0, 255);
   setting.setBackgroundColor(background);
 
