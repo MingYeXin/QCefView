@@ -67,6 +67,17 @@ if(OS_WINDOWS)
     QCEFVIEW_LIB
   )
 
+  target_link_options(QCefView PRIVATE
+    "/DELAYLOAD:libcef.dll"
+  )
+
+  target_link_libraries(QCefView
+    PRIVATE
+    d3d11
+    d3dcompiler
+    dcomp
+  )
+
   add_custom_command(TARGET QCefView
     PRE_BUILD
 
@@ -74,7 +85,7 @@ if(OS_WINDOWS)
     COMMAND ${CMAKE_COMMAND}
     -E copy_directory
     "$<TARGET_FILE_DIR:${CEFVIEW_WING_NAME}>"
-    "$<TARGET_FILE_DIR:QCefView>"
+    "$<TARGET_FILE_DIR:QCefView>/CefView"
 
     # gnerate a file contains timestamp
     COMMAND ${CMAKE_COMMAND}
@@ -119,7 +130,7 @@ if(OS_LINUX)
     # copy binary files of CefViewCore
     COMMAND ${CMAKE_COMMAND}
     -E copy_directory
-    "$<TARGET_FILE_DIR:CefViewWing>"
+    "$<TARGET_FILE_DIR:${CEFVIEW_WING_NAME}>"
     "$<TARGET_FILE_DIR:QCefView>"
   )
 endif() # OS_LINUX
@@ -152,6 +163,14 @@ if(OS_MACOS)
     ${QCefView_details_SRC_FILES}
     ${QCefView_macOS_SRC_FILES}
     ${QCefView_INFO_PLIST_FILE}
+  )
+
+  find_library(METAL_FRAMEWORK Metal)
+  find_library(QUARTZCORE_FRAMEWORK QuartzCore)
+  target_link_libraries(QCefView
+    PRIVATE
+    ${METAL_FRAMEWORK}
+    ${QUARTZCORE_FRAMEWORK}
   )
 
   set_target_properties(QCefView
@@ -200,13 +219,15 @@ endif() # OS_MACOS
 
 target_compile_definitions(QCefView PRIVATE NOMINMAX)
 
-target_include_directories(QCefView PRIVATE
+target_include_directories(QCefView
+  PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/../include"
+  PRIVATE
   ${CefViewCore_EXPORT_INCLUDE_PATH}
 )
 
 add_dependencies(QCefView
-  CefViewCore
+  CefViewCore::CefViewCore
 )
 
 target_link_libraries(QCefView
@@ -215,7 +236,7 @@ target_link_libraries(QCefView
   Qt${QT_VERSION_MAJOR}::Core
   Qt${QT_VERSION_MAJOR}::Widgets
   PRIVATE
-  CefViewCore
+  CefViewCore::CefViewCore
 )
 
 # install QCefView files

@@ -1,4 +1,4 @@
-﻿#include "CCefClientDelegate.h"
+#include "details/CCefClientDelegate.h"
 
 #if defined(Q_OS_WINDOWS)
 #include <windows.h>
@@ -8,17 +8,17 @@
 #include <QScreen>
 #include <QThread>
 
-#include "QCefSettingPrivate.h"
-#include "QCefViewPrivate.h"
+#include "details/QCefSettingPrivate.h"
+#include "details/QCefViewPrivate.h"
 
 #define DEFAULT_POPUP_WIDTH 800
 #define DEFAULT_POPUP_HEIGHT 600
 
 bool
 CCefClientDelegate::onBeforePopup(CefRefPtr<CefBrowser>& browser,
-                                  int64_t frameId,
-                                  const std::string& targetUrl,
-                                  const std::string& targetFrameName,
+                                  CefRefPtr<CefFrame>& frame,
+                                  const CefString& targetUrl,
+                                  const CefString& targetFrameName,
                                   CefLifeSpanHandler::WindowOpenDisposition targetDisposition,
                                   CefWindowInfo& windowInfo,
                                   CefBrowserSettings& settings,
@@ -67,12 +67,12 @@ CCefClientDelegate::onBeforePopup(CefRefPtr<CefBrowser>& browser,
     QMetaObject::invokeMethod(
       pCefViewPrivate_,
       [&]() {
-        cancel = pCefViewPrivate_->onBeforeNewPopupCreate(frameId, //
-                                                          url,     //
-                                                          name,    //
-                                                          d,       //
-                                                          rc,      //
-                                                          s,       //
+        cancel = pCefViewPrivate_->onBeforeNewPopupCreate(ValueConvertor::FrameIdC2Q(frame->GetIdentifier()), //
+                                                          url,                                                //
+                                                          name,                                               //
+                                                          d,                                                  //
+                                                          rc,                                                 //
+                                                          s,                                                  //
                                                           disableJavascriptAccess);
         if (!cancel) {
           QCefSettingPrivate::CopyToCefBrowserSettings(&s, &settings);
@@ -95,11 +95,11 @@ CCefClientDelegate::onBeforePopup(CefRefPtr<CefBrowser>& browser,
     QMetaObject::invokeMethod(
       pCefViewPrivate_,
       [=]() {
-        pCefViewPrivate_->onBeforeNewBrowserCreate(frameId, //
-                                                   url,     //
-                                                   name,    //
-                                                   d,       //
-                                                   rc,      //
+        pCefViewPrivate_->onBeforeNewBrowserCreate(ValueConvertor::FrameIdC2Q(frame->GetIdentifier()), //
+                                                   url,                                                //
+                                                   name,                                               //
+                                                   d,                                                  //
+                                                   rc,                                                 //
                                                    s);
       },
       Qt::QueuedConnection);
@@ -116,7 +116,7 @@ CCefClientDelegate::onAfterCreate(CefRefPtr<CefBrowser>& browser)
 
   QWindow* w = nullptr;
 
-  if (!pCefViewPrivate_->isOSRModeEnabled() && !browser->IsPopup()) {
+  if (!pCefViewPrivate_->isOSRModeEnabled_ && !browser->IsPopup()) {
     // NCW mode and not pop-up browser
     auto winHandle = browser->GetHost()->GetWindowHandle();
 
@@ -160,7 +160,7 @@ CCefClientDelegate::onAfterCreate(CefRefPtr<CefBrowser>& browser)
   Qt::ConnectionType c = Qt::DirectConnection;
   if (pCefViewPrivate_->q_ptr->thread() != QThread::currentThread()) {
     // change connection type
-    if (!pCefViewPrivate_->isOSRModeEnabled()) {
+    if (!pCefViewPrivate_->isOSRModeEnabled_) {
       // NCW mode
       c = Qt::QueuedConnection;
     } else {
@@ -184,7 +184,7 @@ CCefClientDelegate::onAfterCreate(CefRefPtr<CefBrowser>& browser)
 }
 
 bool
-CCefClientDelegate::doClose(CefRefPtr<CefBrowser> browser)
+CCefClientDelegate::doClose(CefRefPtr<CefBrowser>& browser)
 {
   qDebug() << "destroy browser from native";
 
@@ -192,7 +192,7 @@ CCefClientDelegate::doClose(CefRefPtr<CefBrowser> browser)
 }
 
 bool
-CCefClientDelegate::requestClose(CefRefPtr<CefBrowser> browser)
+CCefClientDelegate::requestClose(CefRefPtr<CefBrowser>& browser)
 {
   qDebug() << "destroy browser request from web";
 
@@ -212,6 +212,6 @@ CCefClientDelegate::requestClose(CefRefPtr<CefBrowser> browser)
 }
 
 void
-CCefClientDelegate::onBeforeClose(CefRefPtr<CefBrowser> browser)
+CCefClientDelegate::onBeforeClose(CefRefPtr<CefBrowser>& browser)
 {
 }

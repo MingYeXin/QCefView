@@ -1,39 +1,24 @@
 ﻿#pragma once
 
-#pragma region std_headers
+#pragma region stl_headers
 #include <atomic>
 #include <memory>
 #include <mutex>
 #include <string>
-#pragma endregion std_headers
+#pragma endregion
 
 #pragma region qt_headers
 #include <QCoreApplication>
 #include <QList>
 #include <QObject>
 #include <QTimer>
-#pragma endregion qt_headers
+#pragma endregion
 
 #include <CefViewBrowserApp.h>
 #include <CefViewBrowserClient.h>
 
 #include "CCefAppDelegate.h"
 #include "QCefConfigPrivate.h"
-
-typedef struct FolderResourceMapping
-{
-  QString path;
-  QString url;
-  int priority;
-} FolderResourceMapping;
-
-typedef struct ArchiveResourceMapping
-{
-  QString path;
-  QString url;
-  QString password;
-  int priority;
-} ArchiveResourceMapping;
 
 /// <summary>
 ///
@@ -43,25 +28,48 @@ class QCefContextPrivate : public QObject
   Q_OBJECT
 
 private:
+  /// <summary>
+  ///
+  /// </summary>
   int argc_;
+
+  /// <summary>
+  ///
+  /// </summary>
   char** argv_;
 
-private:
+  /// <summary>
+  ///
+  /// </summary>
   const QCefConfig* config_;
-  QList<FolderResourceMapping> folderResourceMappingList_;
-  QList<ArchiveResourceMapping> archiveResourceMappingList_;
 
 #if defined(Q_OS_MACOS) || defined(CEF_USE_QT_EVENT_LOOP)
+  /// <summary>
+  ///
+  /// </summary>
   QTimer cefWorkerTimer_;
 #endif
 
 #if defined(Q_OS_WINDOWS)
+  /// <summary>
+  ///
+  /// </summary>
   HANDLE windowsJobHandle_ = nullptr;
+
+  /// <summary>
+  ///
+  /// </summary>
   QString windowsJobName_;
 #endif
 
-private:
+  /// <summary>
+  ///
+  /// </summary>
   CefRefPtr<CefViewBrowserApp> pApp_;
+
+  /// <summary>
+  ///
+  /// </summary>
   CCefAppDelegate::RefPtr pAppDelegate_;
 
 public:
@@ -101,7 +109,6 @@ public:
   /// <param name="url">The url to be mapped to</param>
   /// <param name="priority">The priority</param>
   void addLocalFolderResource(const QString& path, const QString& url, int priority = 0);
-  const QList<FolderResourceMapping>& folderResourceMappingList();
 
   /// <summary>
   /// Adds a url mapping item with local archive (.zip) file which contains the web resource
@@ -111,7 +118,6 @@ public:
   /// <param name="password">The password of the archive</param>
   /// <param name="priority">The priority</param>
   void addArchiveResource(const QString& path, const QString& url, const QString& password = "", int priority = 0);
-  const QList<ArchiveResourceMapping>& archiveResourceMappingList();
 
   /// <summary>
   ///

@@ -1,19 +1,19 @@
-﻿#include "CCefClientDelegate.h"
+﻿#include "details/CCefClientDelegate.h"
 
 #include <QDebug>
 #include <QSharedPointer>
 #include <QThread>
 
-#include "QCefDownloadItemPrivate.h"
-#include "QCefViewPrivate.h"
-#include "utils/CommonUtils.h"
-#include "utils/ValueConvertor.h"
+#include "details/QCefDownloadItemPrivate.h"
+#include "details/QCefViewPrivate.h"
+#include "details/utils/CommonUtils.h"
+#include "details/utils/ValueConvertor.h"
 
 void
-CCefClientDelegate::onBeforeDownload(CefRefPtr<CefBrowser> browser,
-                                     CefRefPtr<CefDownloadItem> download_item,
+CCefClientDelegate::onBeforeDownload(CefRefPtr<CefBrowser>& browser,
+                                     CefRefPtr<CefDownloadItem>& download_item,
                                      const CefString& suggested_name,
-                                     CefRefPtr<CefBeforeDownloadCallback> callback)
+                                     CefRefPtr<CefBeforeDownloadCallback>& callback)
 {
   FLog();
 
@@ -80,9 +80,9 @@ CCefClientDelegate::onBeforeDownload(CefRefPtr<CefBrowser> browser,
 }
 
 void
-CCefClientDelegate::onDownloadUpdated(CefRefPtr<CefBrowser> browser,
-                                      CefRefPtr<CefDownloadItem> download_item,
-                                      CefRefPtr<CefDownloadItemCallback> callback)
+CCefClientDelegate::onDownloadUpdated(CefRefPtr<CefBrowser>& browser,
+                                      CefRefPtr<CefDownloadItem>& download_item,
+                                      CefRefPtr<CefDownloadItemCallback>& callback)
 {
   FLog();
 

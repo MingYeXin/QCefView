@@ -1,11 +1,11 @@
-﻿#include "CCefClientDelegate.h"
+﻿#include "details/CCefClientDelegate.h"
 
 #include <QBitmap>
 #include <QByteArray>
 #include <QCursor>
 #include <QIcon>
 
-#include "QCefViewPrivate.h"
+#include "details/QCefViewPrivate.h"
 
 Qt::CursorShape
 mapCursorShape(cef_cursor_type_t& type)
@@ -66,17 +66,17 @@ mapCursorShape(cef_cursor_type_t& type)
 }
 
 void
-CCefClientDelegate::addressChanged(CefRefPtr<CefBrowser>& browser, int64_t frameId, const std::string& url)
+CCefClientDelegate::addressChanged(CefRefPtr<CefBrowser>& browser, CefRefPtr<CefFrame>& frame, const CefString& url)
 {
   if (!IsValidBrowser(browser))
     return;
 
   auto u = QString::fromStdString(url);
-  emit pCefViewPrivate_->q_ptr->addressChanged(frameId, u);
+  emit pCefViewPrivate_->q_ptr->addressChanged(ValueConvertor::FrameIdC2Q(frame->GetIdentifier()), u);
 }
 
 void
-CCefClientDelegate::titleChanged(CefRefPtr<CefBrowser>& browser, const std::string& title)
+CCefClientDelegate::titleChanged(CefRefPtr<CefBrowser>& browser, const CefString& title)
 {
   if (!IsValidBrowser(browser))
     return;
@@ -86,7 +86,7 @@ CCefClientDelegate::titleChanged(CefRefPtr<CefBrowser>& browser, const std::stri
 }
 
 void
-CCefClientDelegate::faviconURLChanged(CefRefPtr<CefBrowser> browser, const std::vector<CefString>& icon_urls)
+CCefClientDelegate::faviconURLChanged(CefRefPtr<CefBrowser>& browser, const std::vector<CefString>& icon_urls)
 {
   if (!IsValidBrowser(browser))
     return;
@@ -109,14 +109,14 @@ CCefClientDelegate::fullscreenModeChanged(CefRefPtr<CefBrowser>& browser, bool f
 }
 
 bool
-CCefClientDelegate::tooltipMessage(CefRefPtr<CefBrowser>& browser, const std::string& text)
+CCefClientDelegate::tooltipMessage(CefRefPtr<CefBrowser>& browser, const CefString& text)
 {
   // allow the tooltip action
   return false;
 }
 
 void
-CCefClientDelegate::statusMessage(CefRefPtr<CefBrowser>& browser, const std::string& value)
+CCefClientDelegate::statusMessage(CefRefPtr<CefBrowser>& browser, const CefString& value)
 {
   if (!IsValidBrowser(browser))
     return;
@@ -126,7 +126,7 @@ CCefClientDelegate::statusMessage(CefRefPtr<CefBrowser>& browser, const std::str
 }
 
 void
-CCefClientDelegate::consoleMessage(CefRefPtr<CefBrowser>& browser, const std::string& message, int level)
+CCefClientDelegate::consoleMessage(CefRefPtr<CefBrowser>& browser, const CefString& message, int level)
 {
   if (!IsValidBrowser(browser))
     return;
@@ -145,7 +145,7 @@ CCefClientDelegate::loadingProgressChanged(CefRefPtr<CefBrowser>& browser, doubl
 }
 
 bool
-CCefClientDelegate::cursorChanged(CefRefPtr<CefBrowser> browser,
+CCefClientDelegate::cursorChanged(CefRefPtr<CefBrowser>& browser,
                                   CefCursorHandle cursor,
                                   cef_cursor_type_t type,
                                   const CefCursorInfo& custom_cursor_info)
@@ -153,12 +153,18 @@ CCefClientDelegate::cursorChanged(CefRefPtr<CefBrowser> browser,
   if (!IsValidBrowser(browser))
     return false;
 
-  if (pCefViewPrivate_->isOSRModeEnabled()) {
+  if (pCefViewPrivate_->isOSRModeEnabled_) {
     // OSR mode
     QCursor cur;
     if (type != CT_CUSTOM) {
-      cur.setShape(mapCursorShape(type));
+      // create cursor from shape
+      cur = QCursor(mapCursorShape(type));
     } else {
+      // create cursor from image data
+      cur = QCursor(QPixmap::fromImage(QImage(static_cast<const uchar*>(custom_cursor_info.buffer),
+                                              custom_cursor_info.size.width,
+                                              custom_cursor_info.size.height,
+                                              QImage::Format_ARGB32_Premultiplied)));
     }
 
     QMetaObject::invokeMethod(pCefViewPrivate_, "onCefUpdateCursor", Q_ARG(const QCursor&, cur));

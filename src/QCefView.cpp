@@ -1,13 +1,12 @@
-﻿#include <QCefView.h>
+#include <QCefView.h>
 
 #pragma region qt_headers
 #include <QPainter>
 #include <QPoint>
 #include <QResizeEvent>
-#include <QStyleOption>
 #include <QVBoxLayout>
 #include <QtDebug>
-#pragma endregion qt_headers
+#pragma endregion
 
 #include <QCefContext.h>
 
@@ -15,25 +14,40 @@
 #include "details/QCefViewPrivate.h"
 #include "details/utils/CommonUtils.h"
 
+#if CEF_VERSION_MAJOR < 122
+const QCefFrameId QCefView::MainFrameID = 0;
+const QCefFrameId QCefView::AllFrameID = -1;
+#else
+const QCefFrameId QCefView::MainFrameID = "0";
+const QCefFrameId QCefView::AllFrameID = "-1";
+#endif
+
 QCefView::QCefView(const QString& url,
                    const QCefSetting* setting,
                    QWidget* parent /*= 0*/,
                    Qt::WindowFlags f /*= Qt::WindowFlags()*/)
   : QWidget(parent, f)
-  , d_ptr(new QCefViewPrivate(QCefContext::instance()->d_func(), this, url, setting))
+  , d_ptr(new QCefViewPrivate(QCefContext::instance()->d_func(), this))
 {
+  // create browser
+  d_ptr->createCefBrowser(this, url, setting ? setting->d_func() : nullptr);
 
-  if (d_ptr->isOSRModeEnabled()) {
+  // set window attributes for OSR mode
+  if (d_ptr->isOSRModeEnabled_) {
     // OSR mode
     setBackgroundRole(QPalette::Window);
     setAttribute(Qt::WA_OpaquePaintEvent);
+    setAttribute(Qt::WA_NoSystemBackground);
+    // import for hardware rendering
+    if (d_ptr->osr.pRenderer_ && d_ptr->osr.pRenderer_->isHardware()) {
+      setAttribute(Qt::WA_PaintOnScreen);
+    }
   }
 
+  // track mouse
   setMouseTracking(true);
+  // set focus policy
   setFocusPolicy(Qt::WheelFocus);
-
-  // create browser
-  d_ptr->createCefBrowser(this, url, setting);
 }
 
 QCefView::QCefView(QWidget* parent /*= 0*/, Qt::WindowFlags f /*= Qt::WindowFlags()*/)
@@ -71,7 +85,7 @@ QCefView::addArchiveResource(const QString& path,
   d->addArchiveResource(path, url, password, priority);
 }
 
-int
+QCefBrowserId
 QCefView::browserId()
 {
   Q_D(QCefView);
@@ -156,11 +170,11 @@ QCefView::triggerEvent(const QCefEvent& event)
 {
   Q_D(QCefView);
 
-  return d->triggerEvent(event.eventName(), event.d_func()->args, CefViewBrowserClient::MAIN_FRAME);
+  return d->triggerEvent(event.eventName(), event.d_func()->args, QCefView::MainFrameID);
 }
 
 bool
-QCefView::triggerEvent(const QCefEvent& event, qint64 frameId)
+QCefView::triggerEvent(const QCefEvent& event, const QCefFrameId& frameId)
 {
   Q_D(QCefView);
 
@@ -172,7 +186,7 @@ QCefView::broadcastEvent(const QCefEvent& event)
 {
   Q_D(QCefView);
 
-  return d->triggerEvent(event.eventName(), event.d_func()->args, CefViewBrowserClient::ALL_FRAMES);
+  return d->triggerEvent(event.eventName(), event.d_func()->args, QCefView::AllFrameID);
 }
 
 bool
@@ -184,7 +198,7 @@ QCefView::responseQCefQuery(const QCefQuery& query)
 }
 
 bool
-QCefView::executeJavascript(qint64 frameId, const QString& code, const QString& url)
+QCefView::executeJavascript(const QCefFrameId& frameId, const QString& code, const QString& url)
 {
   Q_D(QCefView);
 
@@ -192,7 +206,10 @@ QCefView::executeJavascript(qint64 frameId, const QString& code, const QString& 
 }
 
 bool
-QCefView::executeJavascriptWithResult(qint64 frameId, const QString& code, const QString& url, const QString& context)
+QCefView::executeJavascriptWithResult(const QCefFrameId& frameId,
+                                      const QString& code,
+                                      const QString& url,
+                                      const QString& context)
 {
   Q_D(QCefView);
 
@@ -272,7 +289,7 @@ QCefView::setFocus(Qt::FocusReason reason)
 }
 
 QCefView*
-QCefView::onNewBrowser(qint64 sourceFrameId,
+QCefView::onNewBrowser(const QCefFrameId& sourceFrameId,
                        const QString& url,
                        const QString& name,
                        CefWindowOpenDisposition targetDisposition,
@@ -297,7 +314,7 @@ QCefView::onNewBrowser(qint64 sourceFrameId,
 }
 
 bool
-QCefView::onNewPopup(qint64 frameId,
+QCefView::onNewPopup(const QCefFrameId& frameId,
                      const QString& targetUrl,
                      QString& targetFrameName,
                      QCefView::CefWindowOpenDisposition targetDisposition,
@@ -344,7 +361,7 @@ QCefView::inputMethodQuery(Qt::InputMethodQuery query) const
 {
   Q_D(const QCefView);
 
-  if (d->isOSRModeEnabled()) {
+  if (d->isOSRModeEnabled_) {
     // OSR mode
     auto r = d->onViewInputMethodQuery(query);
     if (r.isValid())
@@ -359,55 +376,27 @@ QCefView::render(QPainter* painter)
 {
   Q_D(QCefView);
 
-  if (d->isOSRModeEnabled()) {
-    // OSR mode
-    // 1. paint widget with its stylesheet
-    QStyleOption opt;
-    opt.initFrom(this);
-    style()->drawPrimitive(QStyle::PE_Widget, &opt, painter, this);
+  d->render(painter);
+}
 
-    // 2. paint the CEF view and popup
-    // get current scale factor
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
-    qreal scaleFactor = devicePixelRatioF();
-#else
-    qreal scaleFactor = devicePixelRatio();
-#endif
+QPaintEngine*
+QCefView::paintEngine() const
+{
+  Q_D(const QCefView);
 
-    // perform the painting
-    {
-      // paint cef view
-      QMutexLocker lock(&(d->osr.qViewPaintLock_));
-      int width = d->osr.qCefViewFrame_.width() / scaleFactor;
-      int height = d->osr.qCefViewFrame_.height() / scaleFactor;
-      painter->drawImage(QRect{ 0, 0, width, height }, d->osr.qCefViewFrame_);
-    }
-    {
-      // paint cef popup
-      QMutexLocker lock(&(d->osr.qPopupPaintLock_));
-      if (d->osr.showPopup_) {
-        painter->drawImage(d->osr.qPopupRect_, d->osr.qCefPopupFrame_);
-      }
-    }
+  if (d->isOSRModeEnabled_ && d->osr.pRenderer_ && d->osr.pRenderer_->isHardware()) {
+    return nullptr;
   }
+
+  return QWidget::paintEngine();
 }
 
 void
 QCefView::paintEvent(QPaintEvent* event)
 {
-  // 1. construct painter for current widget
-  QPainter painter(this);
+  Q_D(QCefView);
 
-  // 2. paint background with background role
-  // for OSR mode, this makes sure the surface will be cleared before a new drawing
-  // for NCW mode, this makes sure QCefView will not be treated as transparent background
-  painter.fillRect(rect(), palette().color(backgroundRole()));
-
-  // 3. render self
-  render(&painter);
-
-  // 4. call base paintEvent (empty implementation)
-  QWidget::paintEvent(event);
+  d->onPaintEvent(event);
 }
 
 void
@@ -508,14 +497,7 @@ QCefView::wheelEvent(QWheelEvent* event)
 void
 QCefView::contextMenuEvent(QContextMenuEvent* event)
 {
-  FLog();
-
-  Q_D(const QCefView);
-
-  if (d->isOSRModeEnabled()) {
-    // OSR mode
-    if (d->osr.isShowingContextMenu_) {
-      d->osr.contextMenu_->popup(mapToGlobal(event->pos()));
-    }
-  }
+  Q_D(QCefView);
+  d->onContextMenuEvent(mapToGlobal(event->pos()));
+  QWidget::contextMenuEvent(event);
 }

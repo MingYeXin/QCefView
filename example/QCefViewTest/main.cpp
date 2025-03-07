@@ -1,5 +1,6 @@
 ﻿#include <QApplication>
 #include <QDir>
+#include <QStandardPaths>
 
 #include <QCefContext.h>
 
@@ -12,11 +13,11 @@ main(int argc, char* argv[])
   // For off-screen rendering, Qt::AA_EnableHighDpiScaling must be enabled. If not,
   // then all devicePixelRatio methods will always return 1.0,
   // so CEF will not scale the web content
-  // NOET: There is bugs in Qt 6.2.4, the HighDpi doesn't work 
+  // NOET: There is bugs in Qt 6.2.4, the HighDpi doesn't work
   QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-  #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-    QApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
-  #endif
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+  QApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
+#endif
 #endif
 
   // create QApplication instance
@@ -28,13 +29,15 @@ main(int argc, char* argv[])
   config.setUserAgent("QCefViewTest");
   // set log level
   config.setLogLevel(QCefConfig::LOGSEVERITY_DEFAULT);
-  // set JSBridge object name (default value is QCefViewClient)
+  // set JSBridge object name (default value is CefViewClient)
   config.setBridgeObjectName("CallBridge");
+  // set Built-in scheme name (default value is CefView)
+  config.setBuiltinSchemeName("CefView");
   // port for remote debugging (default is 0 and means to disable remote debugging)
   config.setRemoteDebuggingPort(9000);
   // set background color for all browsers
   // (QCefSetting.setBackgroundColor will overwrite this value for specified browser instance)
-  config.setBackgroundColor(Qt::lightGray);
+  // config.setBackgroundColor(Qt::lightGray);
 
   // WindowlessRenderingEnabled is set to true by default,
   // set to false to disable the OSR mode
@@ -53,11 +56,9 @@ main(int argc, char* argv[])
   config.addCommandLineSwitchWithValue("remote-allow-origins", "*");
   // config.addCommandLineSwitchWithValue("disable-features", "BlinkGenPropertyTrees,TranslateUI,site-per-process");
 
-#if defined(Q_OS_MACOS) && defined(QT_DEBUG)
-  // cef bugs on macOS debug build
-  config.setCachePath(QDir::tempPath());
-#endif
-  
+  // set cache folder
+  config.setCachePath(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation));
+
   // create QCefContext instance with config,
   // the lifecycle of cefContext must be the same as QApplication instance
   QCefContext cefContext(&a, argc, argv, &config);

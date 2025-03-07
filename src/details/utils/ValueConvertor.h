@@ -2,11 +2,15 @@
 
 #pragma region qt_headers
 #include <QVariant>
-#pragma endregion qt_headers
+#pragma endregion 
 
 #pragma region cef_headers
 #include <include/cef_app.h>
-#pragma endregion cef_headers
+#pragma endregion 
+
+#include <CefViewCoreGlobal.h>
+
+#include <QCefView.h>
 
 class ValueConvertor
 {
@@ -24,4 +28,18 @@ public:
   /// <param name="cValue"></param>
   /// <param name="qVariant"></param>
   static void QVariantToCefValue(CefValue* cValue, const QVariant* qVariant);
+
+  /// <summary>
+  ///
+  /// </summary>
+  /// <param name="id"></param>
+  /// <returns></returns>
+  static QCefFrameId FrameIdC2Q(const CefFrameId& id);
+
+  /// <summary>
+  ///
+  /// </summary>
+  /// <param name="id"></param>
+  /// <returns></returns>
+  static CefFrameId FrameIdQ2C(const QCefFrameId& id);
 };

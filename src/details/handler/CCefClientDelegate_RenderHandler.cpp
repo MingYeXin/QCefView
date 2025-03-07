@@ -1,16 +1,14 @@
-﻿#include "CCefClientDelegate.h"
+﻿#include "details/CCefClientDelegate.h"
 
 #include <QApplication>
 #include <QDebug>
 #include <QImage>
 #include <QScreen>
 
-#include "QCefViewPrivate.h"
-
-// OSR mode
+#include "details/QCefViewPrivate.h"
 
 bool
-CCefClientDelegate::getRootScreenRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
+CCefClientDelegate::getRootScreenRect(CefRefPtr<CefBrowser>& browser, CefRect& rect)
 {
   if (!IsValidBrowser(browser)) {
     return false;
@@ -39,7 +37,7 @@ CCefClientDelegate::getRootScreenRect(CefRefPtr<CefBrowser> browser, CefRect& re
 }
 
 void
-CCefClientDelegate::getViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
+CCefClientDelegate::getViewRect(CefRefPtr<CefBrowser>& browser, CefRect& rect)
 {
   if (!IsValidBrowser(browser)) {
     rect.Set(0, 0, 1, 1);
@@ -54,7 +52,7 @@ CCefClientDelegate::getViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
 }
 
 bool
-CCefClientDelegate::getScreenPoint(CefRefPtr<CefBrowser> browser, int viewX, int viewY, int& screenX, int& screenY)
+CCefClientDelegate::getScreenPoint(CefRefPtr<CefBrowser>& browser, int viewX, int viewY, int& screenX, int& screenY)
 {
   if (!IsValidBrowser(browser))
     return false;
@@ -66,7 +64,7 @@ CCefClientDelegate::getScreenPoint(CefRefPtr<CefBrowser> browser, int viewX, int
 }
 
 bool
-CCefClientDelegate::getScreenInfo(CefRefPtr<CefBrowser> browser, CefScreenInfo& screen_info)
+CCefClientDelegate::getScreenInfo(CefRefPtr<CefBrowser>& browser, CefScreenInfo& screen_info)
 {
   if (!IsValidBrowser(browser))
     return false;
@@ -102,25 +100,25 @@ CCefClientDelegate::getScreenInfo(CefRefPtr<CefBrowser> browser, CefScreenInfo& 
 }
 
 void
-CCefClientDelegate::onPopupShow(CefRefPtr<CefBrowser> browser, bool show)
+CCefClientDelegate::onPopupShow(CefRefPtr<CefBrowser>& browser, bool show)
 {
   if (!IsValidBrowser(browser))
     return;
 
-  pCefViewPrivate_->onOsrShowPopup(show);
+  pCefViewPrivate_->osr.pRenderer_->updatePopupVisibility(show);
 }
 
 void
-CCefClientDelegate::onPopupSize(CefRefPtr<CefBrowser> browser, const CefRect& rect)
+CCefClientDelegate::onPopupSize(CefRefPtr<CefBrowser>& browser, const CefRect& rect)
 {
   if (!IsValidBrowser(browser))
     return;
 
-  pCefViewPrivate_->onOsrResizePopup(QRect{ rect.x, rect.y, rect.width, rect.height });
+  pCefViewPrivate_->osr.pRenderer_->updatePopupRect(rect);
 }
 
 void
-CCefClientDelegate::onPaint(CefRefPtr<CefBrowser> browser,
+CCefClientDelegate::onPaint(CefRefPtr<CefBrowser>& browser,
                             CefRenderHandler::PaintElementType type,
                             const CefRenderHandler::RectList& dirtyRects,
                             const void* buffer,
@@ -130,33 +128,83 @@ CCefClientDelegate::onPaint(CefRefPtr<CefBrowser> browser,
   if (!IsValidBrowser(browser))
     return;
 
-  QImage frame;
-  QRegion region;
+  // update CEF image frame
+  ICefViewRenderer::FrameData data;
+  data.image.buffer = buffer;
+  data.image.width = width;
+  data.image.height = height;
+  ICefViewRenderer::FrameDataType dataType = ICefViewRenderer::FrameDataType::CpuImage;
+  pCefViewPrivate_->osr.pRenderer_->updateFrameData(type,       //
+                                                    dirtyRects, //
+                                                    dataType,   //
+                                                    data        //
+  );
 
-  frame = QImage(static_cast<const uchar*>(buffer), width, height, QImage::Format_ARGB32_Premultiplied);
-  for (auto& rect : dirtyRects) {
-    region += QRect{ rect.x, rect.y, rect.width, rect.height };
-  }
-
-  if (PET_VIEW == type) {
-    pCefViewPrivate_->onOsrUpdateViewFrame(frame, region);
-  } else if (PET_POPUP == type) {
-    pCefViewPrivate_->onOsrUpdatePopupFrame(frame, region);
-  } else {
-  }
+  // trigger paint event
+  pCefViewPrivate_->q_ptr->update();
 }
 
+#if CEF_VERSION_MAJOR < 124
 void
-CCefClientDelegate::onAcceleratedPaint(CefRefPtr<CefBrowser> browser,
+CCefClientDelegate::onAcceleratedPaint(CefRefPtr<CefBrowser>& browser,
                                        CefRenderHandler::PaintElementType type,
                                        const CefRenderHandler::RectList& dirtyRects,
                                        void* shared_handle)
 {
+  if (!IsValidBrowser(browser))
+    return;
+
+  // update CEF image texture2d
+  ICefViewRenderer::FrameData data;
+  data.texture.handle = info.shared_texture_handle;
+  data.texture.format = info.format;
+  ICefViewRenderer::FrameDataType dataType = ICefViewRenderer::FrameDataType::GpuTexture;
+  pCefViewPrivate_->osr.pRenderer_->updateFrameData(type,       //
+                                                    dirtyRects, //
+                                                    dataType,   //
+                                                    data        //
+  );
+
+  pCefViewPrivate_->q_ptr->update();
 }
+#else
+void
+CCefClientDelegate::onAcceleratedPaint(CefRefPtr<CefBrowser>& browser,
+                                       CefRenderHandler::PaintElementType type,
+                                       const CefRenderHandler::RectList& dirtyRects,
+                                       const CefAcceleratedPaintInfo& info)
+{
+  if (!IsValidBrowser(browser))
+    return;
+
+  // update CEF image texture2d
+  ICefViewRenderer::FrameData data;
+#if defined(OS_WINDOWS)
+  data.texture.handle = info.shared_texture_handle;
+#elif defined(OS_MACOS)
+  // TO-DO
+  data.texture.handle = info.shared_texture_io_surface;
+#elif defined(OS_LINUX)
+  // TO-DO
+  data.texture.handle = nullptr;
+#else
+#error "Unsupported platform"
+#endif
+  data.texture.format = info.format;
+  ICefViewRenderer::FrameDataType dataType = ICefViewRenderer::FrameDataType::GpuTexture;
+  pCefViewPrivate_->osr.pRenderer_->updateFrameData(type,       //
+                                                    dirtyRects, //
+                                                    dataType,   //
+                                                    data        //
+  );
+
+  pCefViewPrivate_->q_ptr->update();
+}
+#endif
 
 bool
-CCefClientDelegate::startDragging(CefRefPtr<CefBrowser> browser,
-                                  CefRefPtr<CefDragData> drag_data,
+CCefClientDelegate::startDragging(CefRefPtr<CefBrowser>& browser,
+                                  CefRefPtr<CefDragData>& drag_data,
                                   CefRenderHandler::DragOperationsMask allowed_ops,
                                   int x,
                                   int y)
@@ -165,17 +213,17 @@ CCefClientDelegate::startDragging(CefRefPtr<CefBrowser> browser,
 }
 
 void
-CCefClientDelegate::updateDragCursor(CefRefPtr<CefBrowser> browser, CefRenderHandler::DragOperation operation)
+CCefClientDelegate::updateDragCursor(CefRefPtr<CefBrowser>& browser, CefRenderHandler::DragOperation operation)
 {
 }
 
 void
-CCefClientDelegate::onScrollOffsetChanged(CefRefPtr<CefBrowser> browser, double x, double y)
+CCefClientDelegate::onScrollOffsetChanged(CefRefPtr<CefBrowser>& browser, double x, double y)
 {
 }
 
 void
-CCefClientDelegate::onImeCompositionRangeChanged(CefRefPtr<CefBrowser> browser,
+CCefClientDelegate::onImeCompositionRangeChanged(CefRefPtr<CefBrowser>& browser,
                                                  const CefRange& selected_range,
                                                  const CefRenderHandler::RectList& character_bounds)
 {
@@ -195,14 +243,14 @@ CCefClientDelegate::onImeCompositionRangeChanged(CefRefPtr<CefBrowser> browser,
 }
 
 void
-CCefClientDelegate::onTextSelectionChanged(CefRefPtr<CefBrowser> browser,
+CCefClientDelegate::onTextSelectionChanged(CefRefPtr<CefBrowser>& browser,
                                            const CefString& selected_text,
                                            const CefRange& selected_range)
 {
 }
 
 void
-CCefClientDelegate::onVirtualKeyboardRequested(CefRefPtr<CefBrowser> browser,
+CCefClientDelegate::onVirtualKeyboardRequested(CefRefPtr<CefBrowser>& browser,
                                                CefRenderHandler::TextInputMode input_mode)
 {
 }

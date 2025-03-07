@@ -1,14 +1,14 @@
-﻿#include "CCefClientDelegate.h"
+﻿#include "details/CCefClientDelegate.h"
 
 #include <QDebug>
 #include <QSharedPointer>
 #include <QThread>
 
-#include "QCefViewPrivate.h"
+#include "details/QCefViewPrivate.h"
 
 bool
-CCefClientDelegate::onDragEnter(CefRefPtr<CefBrowser> browser,
-                                CefRefPtr<CefDragData> dragData,
+CCefClientDelegate::onDragEnter(CefRefPtr<CefBrowser>& browser,
+                                CefRefPtr<CefDragData>& dragData,
                                 CefDragHandler::DragOperationsMask mask)
 {
   // Return false for default drag handling behavior or true to cancel the drag event.
@@ -17,6 +17,7 @@ CCefClientDelegate::onDragEnter(CefRefPtr<CefBrowser> browser,
 
 void
 CCefClientDelegate::draggableRegionChanged(CefRefPtr<CefBrowser>& browser,
+                                           CefRefPtr<CefFrame>& frame,
                                            const std::vector<CefDraggableRegion>& regions)
 {
   if (!IsValidBrowser(browser))

@@ -1,8 +1,8 @@
-#include "QCefSetting.h"
+﻿#include <QCefSetting.h>
 
 #pragma region cef_headers
 #include <include/cef_version.h>
-#pragma endregion cef_headers
+#pragma endregion 
 
 #include "details/QCefSettingPrivate.h"
 #include "details/utils/CommonUtils.h"
@@ -30,17 +30,17 @@ QCefSetting::operator=(const QCefSetting& other)
 QCefSetting::~QCefSetting() {}
 
 void
-QCefSetting::setInitSize(const QSize& size)
+QCefSetting::setWindowInitialSize(const QSize& size)
 {
   Q_D(QCefSetting);
-  d->initSize_ = size;
+  d->windowInitialSize_ = size;
 }
 
 const QSize
-QCefSetting::initSize() const
+QCefSetting::windowInitialSize() const
 {
   Q_D(const QCefSetting);
-  return d->initSize_;
+  return d->windowInitialSize_;
 }
 
 void
@@ -424,3 +424,19 @@ QCefSetting::backgroundColor() const
   Q_D(const QCefSetting);
   return d->backgroundColor_;
 }
+
+#if CEF_VERSION_MAJOR >= 125
+void
+QCefSetting::setHardwareAcceleration(const bool value)
+{
+  Q_D(QCefSetting);
+  d->hardwareAcceleration_ = value;
+}
+
+const bool
+QCefSetting::hardwareAcceleration() const
+{
+  Q_D(const QCefSetting);
+  return d->hardwareAcceleration_;
+}
+#endif]

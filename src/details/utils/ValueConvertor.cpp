@@ -2,7 +2,7 @@
 
 #pragma region qt_headers
 #include <QDebug>
-#pragma endregion qt_headers
+#pragma endregion
 
 void
 ValueConvertor::CefValueToQVariant(QVariant* qVariant, CefValue* cValue)
@@ -172,4 +172,24 @@ ValueConvertor::QVariantToCefValue(CefValue* cValue, const QVariant* qVariant)
       qWarning() << "Unsupported QVariantType conversion: " << type;
       break;
   }
+}
+
+QCefFrameId
+ValueConvertor::FrameIdC2Q(const CefFrameId& id)
+{
+#if CEF_VERSION_MAJOR < 122
+  return id;
+#else
+  return QCefFrameId::fromUtf8(id.ToString().c_str(), static_cast<int>(id.ToString().length()));
+#endif
+}
+
+CefFrameId
+ValueConvertor::FrameIdQ2C(const QCefFrameId& id)
+{
+#if CEF_VERSION_MAJOR < 122
+  return id;
+#else
+  return CefFrameId(id.toStdString());
+#endif
 }

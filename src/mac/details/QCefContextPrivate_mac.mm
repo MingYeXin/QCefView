@@ -7,10 +7,9 @@
 #include <include/cef_application_mac.h>
 #include <include/cef_sandbox_mac.h>
 #include <include/wrapper/cef_library_loader.h>
-#pragma endregion cef_headers
+#pragma endregion 
 
 #include <CefViewCoreProtocol.h>
-#include <CefViewWingProcessName.h>
 
 #include "../../details/QCefConfigPrivate.h"
 
@@ -179,6 +178,11 @@ QCefContextPrivate::initializeCef(const QCefConfig* config)
   CefSettings cef_settings;
   QCefConfigPrivate::CopyToCefSettings(config, &cef_settings);
 
+#if CEF_VERSION_MAJOR >= 125 && CEF_VERSION_MAJOR <= 127
+  //  https://github.com/chromiumembedded/cef/issues/3685
+  cef_settings.chrome_runtime = true;
+#endif
+
   // fixed values
   CefString(&cef_settings.framework_dir_path) = cefFrameworkPath();
   CefString(&cef_settings.browser_subprocess_path) = cefSubprocessPath();
@@ -193,8 +197,10 @@ QCefContextPrivate::initializeCef(const QCefConfig* config)
   // Initialize CEF.
   auto cmdArgs = QCefConfigPrivate::GetCommandLineArgs(config);
   auto appDelegate = std::make_shared<CCefAppDelegate>(this, cmdArgs);
+  auto builtinSchemeName = config ? config->builtinSchemeName().toStdString() : std::string();
   auto bridgeObjectName = config ? config->bridgeObjectName().toStdString() : std::string();
-  auto app = new CefViewBrowserApp(bridgeObjectName, appDelegate);
+  auto app = new CefViewBrowserApp(builtinSchemeName, bridgeObjectName, appDelegate);
+
   CefMainArgs main_args(argc_, argv_);
   if (!CefInitialize(main_args, cef_settings, app, nullptr)) {
     assert(0);
@@ -221,3 +227,4 @@ QCefContextPrivate::uninitializeCef()
 
   freeCefLibrary();
 }
+

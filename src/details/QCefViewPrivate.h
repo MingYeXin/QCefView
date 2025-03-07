@@ -3,12 +3,14 @@
 #include <QMenu>
 #include <QMutex>
 #include <QPointer>
+#include <QScopedPointer>
 #include <QString>
+#include <QStringList>
 
 #if defined(QT_DEBUG)
 #include <QElapsedTimer>
 #endif
-#pragma endregion qt_headers
+#pragma endregion
 
 #include <CefViewBrowserClient.h>
 #include <CefViewBrowserClientDelegate.h>
@@ -16,7 +18,9 @@
 #include "CCefClientDelegate.h"
 #include "QCefContextPrivate.h"
 #include "QCefWindow.h"
+#include "render/CefViewRendererFactory.h"
 #include "utils/MenuBuilder.h"
+#include "utils/ValueConvertor.h"
 
 #include <QCefQuery.h>
 #include <QCefView.h>
@@ -76,64 +80,20 @@ public:
   bool isOSRModeEnabled_ = false;
 
   /// <summary>
-  /// Offscreen rendering private data
+  /// Off-screen rendering private data
   /// </summary>
   struct OsrPrivateData
   {
-    /// <summary>
-    ///
-    /// </summary>
-    bool transparentPaintingEnabled = false;
-
-    /// <summary>
-    ///
-    /// </summary>
-    bool showPopup_ = false;
-
-    /// <summary>
-    ///
-    /// </summary>
-    QRect qPopupRect_;
-
-    /// <summary>
-    ///
-    /// </summary>
+    // IME parameters
     QRect qImeCursorRect_;
 
-    /// <summary>
-    ///
-    /// </summary>
-    QMutex qViewPaintLock_;
-
-    /// <summary>
-    ///
-    /// </summary>
-    QImage qCefViewFrame_;
-
-    /// <summary>
-    ///
-    /// </summary>
-    QMutex qPopupPaintLock_;
-
-    /// <summary>
-    ///
-    /// </summary>
-    QImage qCefPopupFrame_;
-
-    /// <summary>
-    ///
-    /// </summary>
+    // context menu status and parameters
     bool isShowingContextMenu_ = false;
-
-    /// <summary>
-    ///
-    /// </summary>
     QMenu* contextMenu_ = nullptr;
-
-    /// <summary>
-    ///
-    /// </summary>
     CefRefPtr<CefRunContextMenuCallback> contextMenuCallback_;
+
+    // OSR renderer
+    std::shared_ptr<ICefViewRenderer> pRenderer_;
   } osr;
 
   /// <summary>
@@ -162,14 +122,11 @@ public:
 #endif
 
 public:
-  explicit QCefViewPrivate(QCefContextPrivate* ctx,
-                           QCefView* view,
-                           const QString& url,
-                           const QCefSetting* setting = nullptr);
+  explicit QCefViewPrivate(QCefContextPrivate* ctx, QCefView* view);
 
   ~QCefViewPrivate();
 
-  void createCefBrowser(QCefView* view, const QString& url, const QCefSetting* setting);
+  void createCefBrowser(QCefView* view, const QString& url, const QCefSettingPrivate* setting);
 
   void destroyCefBrowser();
 
@@ -179,21 +136,19 @@ public:
 
   void setCefWindowFocus(bool focus);
 
-  bool isOSRModeEnabled() const;
-
   QCefQuery createQuery(const QString& req, const int64_t id);
 
 protected:
   void onCefBrowserCreated(CefRefPtr<CefBrowser> browser, QWindow* window);
 
-  bool onBeforeNewBrowserCreate(qint64 sourceFrameId,
+  bool onBeforeNewBrowserCreate(const QCefFrameId& sourceFrameId,
                                 const QString& targetUrl,
                                 const QString& targetFrameName,
                                 QCefView::CefWindowOpenDisposition targetDisposition,
                                 QRect rect,
                                 QCefSetting settings);
 
-  bool onBeforeNewPopupCreate(qint64 sourceFrameId,
+  bool onBeforeNewPopupCreate(const QCefFrameId& sourceFrameId,
                               const QString& targetUrl,
                               QString& targetFrameName,
                               QCefView::CefWindowOpenDisposition targetDisposition,
@@ -215,6 +170,10 @@ protected:
 
   bool requestCloseFromWeb(CefRefPtr<CefBrowser>& browser);
 
+  void render(QPainter* painter);
+
+  qreal scaleFactor();
+
 public slots:
   void onAppFocusChanged(QWidget* old, QWidget* now);
 
@@ -230,22 +189,11 @@ public slots:
 
   void onOsrImeCursorRectChanged(const QRect& rc);
 
-  void onOsrShowPopup(bool show);
-
-  void onOsrResizePopup(const QRect& rc);
-
   void onContextMenuTriggered(QAction* action);
 
   void onContextMenuDestroyed(QObject* obj);
 
-signals:
-  void updateOsrFrame();
-
 protected:
-  void onOsrUpdateViewFrame(const QImage& frame, const QRegion& region);
-
-  void onOsrUpdatePopupFrame(const QImage& frame, const QRegion& region);
-
   void onBeforeCefContextMenu(const MenuBuilder::MenuData& data);
 
   void onRunCefContextMenu(QPoint pos, CefRefPtr<CefRunContextMenuCallback> callback);
@@ -253,9 +201,9 @@ protected:
   void onCefContextMenuDismissed();
 
   void onFileDialog(CefBrowserHost::FileDialogMode mode,
-                    const CefString& title,
-                    const CefString& default_file_path,
-                    const std::vector<CefString>& accept_filters,
+                    const QString& title,
+                    const QString& default_file_path,
+                    const QStringList& accept_filters,
 #if CEF_VERSION_MAJOR < 102
                     int selected_accept_filter,
 #endif
@@ -272,6 +220,10 @@ protected:
 
   QVariant onViewInputMethodQuery(Qt::InputMethodQuery query) const;
 
+  void onPaintEngine(QPaintEngine*& engine) const;
+
+  void onPaintEvent(QPaintEvent* event);
+
   void onViewInputMethodEvent(QInputMethodEvent* event);
 
   void onViewVisibilityChanged(bool visible);
@@ -285,6 +237,8 @@ protected:
   void onViewMouseEvent(QMouseEvent* event);
 
   void onViewWheelEvent(QWheelEvent* event);
+
+  void onContextMenuEvent(const QPoint& pos);
 
 public:
   int browserId();
@@ -307,19 +261,22 @@ public:
 
   void browserStopLoad();
 
-  bool triggerEvent(const QString& name, const QVariantList& args, int64_t frameId = CefViewBrowserClient::MAIN_FRAME);
+  bool triggerEvent(const QString& name, const QVariantList& args, const QCefFrameId& frameId = QCefView::MainFrameID);
 
   bool responseQCefQuery(const QCefQuery& query);
 
   bool responseQCefQuery(const int64_t query, bool success, const QString& response, int error);
 
-  bool executeJavascript(int64_t frameId, const QString& code, const QString& url);
+  bool executeJavascript(const QCefFrameId& frameId, const QString& code, const QString& url);
 
-  bool executeJavascriptWithResult(int64_t frameId, const QString& code, const QString& url, const QString& context);
+  bool executeJavascriptWithResult(const QCefFrameId& frameId,
+                                   const QString& code,
+                                   const QString& url,
+                                   const QString& context);
 
   void notifyMoveOrResizeStarted();
 
-  bool sendEventNotifyMessage(int64_t frameId, const QString& name, const QVariantList& args);
+  bool sendEventNotifyMessage(const QCefFrameId& frameId, const QString& name, const QVariantList& args);
 
   bool setPreference(const QString& name, const QVariant& value, const QString& error);
 };

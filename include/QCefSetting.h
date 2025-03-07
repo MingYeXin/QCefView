@@ -1,4 +1,4 @@
-/*
+﻿/*
  * File: QCefSetting.h
  * Project: QCefView
  * Created: 29th March 2016
@@ -16,7 +16,7 @@
 #include <QScopedPointer>
 #include <QSize>
 #include <QString>
-#pragma endregion qt_headers
+#pragma endregion 
 
 class QCefSettingPrivate;
 
@@ -57,13 +57,13 @@ public:
   /// Sets the initial size of the browser
   /// </summary>
   /// <param name="size">The initial size</param>
-  void setInitSize(const QSize& size);
+  void setWindowInitialSize(const QSize& size);
 
   /// <summary>
   /// Gets the initial size of the browser
   /// </summary>
   /// <returns></returns>
-  const QSize initSize() const;
+  const QSize windowInitialSize() const;
 
   /// <summary>
   /// Sets the standard font family
@@ -398,6 +398,20 @@ public:
   /// </summary>
   /// <returns>The color</returns>
   const QVariant backgroundColor() const;
+
+  #if CEF_VERSION_MAJOR >= 125
+  /// <summary>
+  /// 
+  /// </summary>
+  /// <param name="value"></param>
+  void setHardwareAcceleration(const bool value);
+
+  /// <summary>
+  /// 
+  /// </summary>
+  /// <returns></returns>
+  const bool hardwareAcceleration() const;
+  #endif
 };
 
 Q_DECLARE_METATYPE(QCefSetting);

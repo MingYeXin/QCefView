@@ -24,20 +24,28 @@ protected:
   // QCefView slots
 protected slots:
 
-  void onInvokeMethod(int browserId, int64_t frameId, const QString& method, const QVariantList& arguments);
+  void onInvokeMethod(const QCefBrowserId& browserId,
+                      const QCefFrameId& frameId,
+                      const QString& method,
+                      const QVariantList& arguments);
 
-  void onQCefQueryRequest(int browserId, int64_t frameId, const QCefQuery& query);
+  void onQCefUrlRequest(const QCefBrowserId& browserId, const QCefFrameId& frameId, const QString& url);
 
-  void onJavascriptResult(int browserId, int64_t frameId, const QString& context, const QVariant& result);
+  void onQCefQueryRequest(const QCefBrowserId& browserId, const QCefFrameId& frameId, const QCefQuery& query);
 
-  void onLoadingStateChanged(int browserId, bool isLoading, bool canGoBack, bool canGoForward);
+  void onJavascriptResult(const QCefBrowserId& browserId,
+                          const QCefFrameId& frameId,
+                          const QString& context,
+                          const QVariant& result);
 
-  void onLoadStart(int browserId, qint64 frameId, bool isMainFrame, int transitionType);
+  void onLoadingStateChanged(const QCefBrowserId& browserId, bool isLoading, bool canGoBack, bool canGoForward);
 
-  void onLoadEnd(int browserId, qint64 frameId, bool isMainFrame, int httpStatusCode);
+  void onLoadStart(const QCefBrowserId& browserId, const QCefFrameId& frameId, bool isMainFrame, int transitionType);
 
-  void onLoadError(int browserId,
-                   qint64 frameId,
+  void onLoadEnd(const QCefBrowserId& browserId, const QCefFrameId& frameId, bool isMainFrame, int httpStatusCode);
+
+  void onLoadError(const QCefBrowserId& browserId,
+                   const QCefFrameId& frameId,
                    bool isMainFrame,
                    int errorCode,
                    const QString& errorMsg,
@@ -62,8 +70,8 @@ protected slots:
 private:
   Ui::MainWindow m_ui;
 
-  CefViewWidget* m_pLeftCefViewWidget = nullptr;
-  CefViewWidget* m_pRightCefViewWidget = nullptr;
+  QCefView* m_pLeftCefViewWidget = nullptr;
+  QCefView* m_pRightCefViewWidget = nullptr;
 };
 
 #endif // QCEFVIEWTEST_H

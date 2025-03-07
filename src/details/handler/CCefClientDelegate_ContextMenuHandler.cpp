@@ -1,18 +1,18 @@
-﻿#include "CCefClientDelegate.h"
+﻿#include "details/CCefClientDelegate.h"
 
 #include <QDebug>
 #include <QThread>
 
-#include "utils/CommonUtils.h"
-#include "utils/MenuBuilder.h"
+#include "details/utils/CommonUtils.h"
+#include "details/utils/MenuBuilder.h"
 
-#include "QCefViewPrivate.h"
+#include "details/QCefViewPrivate.h"
 
 void
-CCefClientDelegate::onBeforeContextMenu(CefRefPtr<CefBrowser> browser,
-                                        CefRefPtr<CefFrame> frame,
-                                        CefRefPtr<CefContextMenuParams> params,
-                                        CefRefPtr<CefMenuModel> model)
+CCefClientDelegate::onBeforeContextMenu(CefRefPtr<CefBrowser>& browser,
+                                        CefRefPtr<CefFrame>& frame,
+                                        CefRefPtr<CefContextMenuParams>& params,
+                                        CefRefPtr<CefMenuModel>& model)
 {
   FLog();
 
@@ -32,7 +32,7 @@ CCefClientDelegate::onBeforeContextMenu(CefRefPtr<CefBrowser> browser,
     return;
   }
 
-  if (pCefViewPrivate_->isOSRModeEnabled()) {
+  if (pCefViewPrivate_->isOSRModeEnabled_) {
     // OSR mode
     auto menuData = MenuBuilder::CreateMenuDataFromCefMenu(model.get());
     QMetaObject::invokeMethod(pCefViewPrivate_, [=]() { pCefViewPrivate_->onBeforeCefContextMenu(menuData); });
@@ -40,20 +40,20 @@ CCefClientDelegate::onBeforeContextMenu(CefRefPtr<CefBrowser> browser,
 }
 
 bool
-CCefClientDelegate::onRunContextMenu(CefRefPtr<CefBrowser> browser,
-                                     CefRefPtr<CefFrame> frame,
-                                     CefRefPtr<CefContextMenuParams> params,
-                                     CefRefPtr<CefMenuModel> model,
-                                     CefRefPtr<CefRunContextMenuCallback> callback)
+CCefClientDelegate::onRunContextMenu(CefRefPtr<CefBrowser>& browser,
+                                     CefRefPtr<CefFrame>& frame,
+                                     CefRefPtr<CefContextMenuParams>& params,
+                                     CefRefPtr<CefMenuModel>& model,
+                                     CefRefPtr<CefRunContextMenuCallback>& callback)
 {
   FLog();
 
   // popup browser doesn't involve off-screen rendering
-   if (browser->IsPopup()) {
-     return false;
-   }
+  if (browser->IsPopup()) {
+    return false;
+  }
 
-  if (pCefViewPrivate_->isOSRModeEnabled()) {
+  if (pCefViewPrivate_->isOSRModeEnabled_) {
     // OSR mode, create context menu with CEF built-in menu mode and show as customized context menu
     QPoint pos(params->GetXCoord(), params->GetYCoord());
     QMetaObject::invokeMethod(pCefViewPrivate_, [=]() { pCefViewPrivate_->onRunCefContextMenu(pos, callback); });
@@ -65,9 +65,9 @@ CCefClientDelegate::onRunContextMenu(CefRefPtr<CefBrowser> browser,
 }
 
 bool
-CCefClientDelegate::onContextMenuCommand(CefRefPtr<CefBrowser> browser,
-                                         CefRefPtr<CefFrame> frame,
-                                         CefRefPtr<CefContextMenuParams> params,
+CCefClientDelegate::onContextMenuCommand(CefRefPtr<CefBrowser>& browser,
+                                         CefRefPtr<CefFrame>& frame,
+                                         CefRefPtr<CefContextMenuParams>& params,
                                          int command_id,
                                          CefContextMenuHandler::EventFlags event_flags)
 {
@@ -77,11 +77,11 @@ CCefClientDelegate::onContextMenuCommand(CefRefPtr<CefBrowser> browser,
 }
 
 void
-CCefClientDelegate::onContextMenuDismissed(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame)
+CCefClientDelegate::onContextMenuDismissed(CefRefPtr<CefBrowser>& browser, CefRefPtr<CefFrame>& frame)
 {
   FLog();
 
-  if (pCefViewPrivate_->isOSRModeEnabled()) {
+  if (pCefViewPrivate_->isOSRModeEnabled_) {
     // OSR mode
     QMetaObject::invokeMethod(pCefViewPrivate_, [=]() { pCefViewPrivate_->onCefContextMenuDismissed(); });
   }
