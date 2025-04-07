@@ -346,6 +346,8 @@ QCefViewPrivate::onCefBrowserCreated(CefRefPtr<CefBrowser> browser, QWindow* win
             Qt::UniqueConnection                         //
     );
   }
+
+  emit q_ptr->sigCefBrowserCreated();
 }
 
 bool

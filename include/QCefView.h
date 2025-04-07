@@ -1,4 +1,4 @@
-/*
+﻿/*
  * File: QCefView.h
  * Project: QCefView
  * Created: 29th March 2016
@@ -303,6 +303,7 @@ signals:
   /// <param name="canGoBack">Indicates the browser can go back</param>
   /// <param name="canGoForward">Indicates the browser can go forward</param>
   void loadingStateChanged(const QCefBrowserId& browserId, bool isLoading, bool canGoBack, bool canGoForward);
+  void loadingStateChangedBeforeCefBrowserCreate();
 
   /// <summary>
   /// Gets called on loading starts
@@ -312,6 +313,7 @@ signals:
   /// <param name="isMainFrame">Indicates the whether this is the main frame</param>
   /// <param name="transitionType">transition type</param>
   void loadStart(const QCefBrowserId& browserId, const QCefFrameId& frameId, bool isMainFrame, int transitionType);
+  void loadStartBeforeCefBrowserCreate();
 
   /// <summary>
   /// Gets called on loading ends
@@ -321,6 +323,7 @@ signals:
   /// <param name="isMainFrame">Indicates the whether this is the main frame</param>
   /// <param name="httpStatusCode">The HTTP status code</param>
   void loadEnd(const QCefBrowserId& browserId, const QCefFrameId& frameId, bool isMainFrame, int httpStatusCode);
+  void loadEndBeforeCefBrowserCreate();
 
   /// <summary>
   /// Gets called on loading failed due to error
@@ -337,6 +340,7 @@ signals:
                  int errorCode,
                  const QString& errorMsg,
                  const QString& failedUrl);
+  void loadErrorBeforeCefBrowserCreate();
 
   /// <summary>
   /// Gets called on draggable region changed
@@ -434,6 +438,11 @@ signals:
   /// </summary>
   /// <param name="window">The native browser windows</param>
   void nativeBrowserCreated(QWindow* window);
+
+  /// <summary>
+  /// end of onCefBrowserCreated function
+  /// </summary>
+  void sigCefBrowserCreated();
 
 protected:
   /// <summary>
