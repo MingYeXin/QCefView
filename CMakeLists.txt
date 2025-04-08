@@ -45,7 +45,7 @@ option(USE_WIN_DCOMPOSITION
 # CefSettings.multi_threaded_message_loop = true && CefSettings.external_message_pump = false
 option(USE_QT_EVENT_LOOP
   "Enable the integration of CEF message loop thread into Qt event loop"
-  OFF
+  ON
 )
 
 # append cmake config module path
