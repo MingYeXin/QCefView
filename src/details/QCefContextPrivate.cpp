@@ -1,4 +1,4 @@
-﻿#include "QCefContextPrivate.h"
+#include "QCefContextPrivate.h"
 
 #pragma region qt_headers
 #include <QThread>
@@ -24,10 +24,9 @@ QCefContextPrivate::QCefContextPrivate(QCoreApplication* app, int argc, char** a
 {
 #if defined(Q_OS_MACOS) || defined(CEF_USE_QT_EVENT_LOOP)
   cefWorkerTimer_.setTimerType(Qt::PreciseTimer);
-  cefWorkerTimer_.start(kCefWorkerIntervalMs);
   connect(&cefWorkerTimer_, SIGNAL(timeout()), this, SLOT(performCefLoopWork()));
 #endif
-
+  
   connect(app, SIGNAL(aboutToQuit()), this, SLOT(onAboutToQuit()));
 }
 
@@ -48,6 +47,10 @@ QCefContextPrivate::initialize(const QCefConfig* config)
   if (!initializeCef(config)) {
     return false;
   }
+  
+#if defined(Q_OS_MACOS) || defined(CEF_USE_QT_EVENT_LOOP)
+  cefWorkerTimer_.start(kCefWorkerIntervalMs);
+#endif
 
   return true;
 }
@@ -134,12 +137,16 @@ QCefContextPrivate::scheduleCefLoopWork(int64_t delayMs)
 {
   // calculate the effective delay number
   auto delay = qMax((int64_t)0, qMin(delayMs, kCefWorkerIntervalMs));
-  QTimer::singleShot(delay, this, SLOT(performCefLoopWork()));
+  QTimer::singleShot(static_cast<int>(delay), this, SLOT(performCefLoopWork()));
 }
 
 void
 QCefContextPrivate::onAboutToQuit()
 {
+  if (!pApp_) {
+    return;
+  }
+  
   // close all live browsers
   QCefViewPrivate::destroyAllInstance();
 

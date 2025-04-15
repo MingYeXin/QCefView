@@ -1,4 +1,4 @@
-﻿#include <QCefSetting.h>
+#include <QCefSetting.h>
 
 #pragma region cef_headers
 #include <include/cef_version.h>

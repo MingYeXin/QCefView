@@ -544,6 +544,11 @@ QCefViewPrivate::onCefWindowLostTabFocus(bool next)
     widget->setFocus(reason);
     widget->activateWindow();
   }
+
+  // update cef focus status
+  if (isOSRModeEnabled_) {
+    osr.hasCefGotFocus_ = false;
+  }
 }
 
 void
@@ -554,6 +559,11 @@ QCefViewPrivate::onCefWindowGotFocus()
   QWidget* focusedWidget = qApp->focusWidget();
   if (focusedWidget && focusedWidget != q) {
     focusedWidget->clearFocus();
+  }
+
+  // update cef focus status
+  if (isOSRModeEnabled_) {
+    osr.hasCefGotFocus_ = true;
   }
 }
 
@@ -975,10 +985,27 @@ QCefViewPrivate::onViewFocusChanged(bool focused)
     // OSR mode
     if (!pCefBrowser_)
       return;
+
     if (focused) {
+      // QCefView gained the focus
+
+      // sync the focus status to CEF browser
       pCefBrowser_->GetHost()->SetFocus(focused);
-    } else if (!osr.isShowingContextMenu_) {
+
+      // update cef focus status
+      osr.hasCefGotFocus_ = true;
+    } else {
+      // QCefView released the focus
+
+      // if the context menu is showing we do not clear CEF browser focus
+      if (osr.isShowingContextMenu_)
+        return;
+
+      // clear CEF browser focus for any other reasons
       pCefBrowser_->GetHost()->SetFocus(focused);
+
+      // update cef focus status
+      osr.hasCefGotFocus_ = false;
     }
   }
 }
@@ -1134,7 +1161,7 @@ QCefViewPrivate::onViewWheelEvent(QWheelEvent* event)
       d.setX(0);
     }
 
-    pCefBrowser_->GetHost()->SendMouseWheelEvent(e, d.x() * 0.1, d.y() * 0.1);
+    pCefBrowser_->GetHost()->SendMouseWheelEvent(e, d.x(), d.y());
   }
 }
 
