@@ -188,6 +188,7 @@ if(OS_MACOS)
   else()
     set(QT_MIN_DEPLOYMENT_TARGET 10.10)
   endif()
+  message("-- QT_MIN_DEPLOYMENT_TARGET = ${QT_MIN_DEPLOYMENT_TARGET}")
 
   # detect minimum deployment target by CEF
   # plese refer to: https://bitbucket.org/chromiumembedded/cef/wiki/BranchesAndBuilding.md
@@ -198,6 +199,7 @@ if(OS_MACOS)
   else()
     set(CEF_MIN_DEPLOYMENT_TARGET 10.11)
   endif()
+  message("-- CEF_MIN_DEPLOYMENT_TARGET = ${CEF_MIN_DEPLOYMENT_TARGET}")
 
   # use the greater one as the minimum deployment target
   if(${QT_MIN_DEPLOYMENT_TARGET} VERSION_LESS ${CEF_MIN_DEPLOYMENT_TARGET})
@@ -205,6 +207,7 @@ if(OS_MACOS)
   else()
     set(CMAKE_OSX_DEPLOYMENT_TARGET ${QT_MIN_DEPLOYMENT_TARGET})
   endif()
+  message("-- CMAKE_OSX_DEPLOYMENT_TARGET = ${CMAKE_OSX_DEPLOYMENT_TARGET}")
 endif()
 
 # Config QCefView target

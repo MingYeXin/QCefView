@@ -236,10 +236,10 @@ if(OS_MACOS)
     cd "$<TARGET_BUNDLE_DIR:QCefView>/Resources/CefView/Chromium Embedded Framework.framework/Resources" && chmod +rw *.bin
 
     # sign the cef framework
-    COMMAND codesign
-    --force
-    --sign -
-    "$<TARGET_BUNDLE_DIR:QCefView>/Resources/CefView/Chromium Embedded Framework.framework"
+#    COMMAND codesign
+#    --force
+#    --sign -
+#    "$<TARGET_BUNDLE_DIR:QCefView>/Resources/CefView/Chromium Embedded Framework.framework"
   )
 endif() # OS_MACOS
 
@@ -274,6 +274,16 @@ target_link_libraries(QCefView
   Qt${QT_VERSION_MAJOR}::Core
   Qt${QT_VERSION_MAJOR}::Widgets
 )
+
+# 查找 IOSurface.framework（仅 macOS）
+if(APPLE)
+  find_library(F_IOSURFACE_FRAMEWORK IOSurface)
+  if(F_IOSURFACE_FRAMEWORK)
+    target_link_libraries(QCefView PRIVATE ${IOSURFACE_FRAMEWORK})
+  else()
+    message(FATAL_ERROR "找不到：IOSurface.framework")
+  endif()
+endif()
 
 # install QCefView files
 install(

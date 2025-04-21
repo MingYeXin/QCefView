@@ -7,7 +7,13 @@
 # Non-Windows: export QTDIR=PATH/TO/QT
 # 2. modifying the value below directly
 #
-set(QT_SDK_DIR "C:/Qt/5.15.2/msvc2019_64")
+if(WIN32)
+  set(QT_SDK_DIR "C:/Qt/5.15.2/msvc2019_64")
+elseif(APPLE)
+  set(QT_SDK_DIR "/Users/ljianji/Qt/6.4.3/macos")
+elseif(UNIX)
+  set(QT_SDK_DIR "")
+endif()
 
 # Qt build toolchain path not set or doesn't exist
 # try to read from environment QTDIR
