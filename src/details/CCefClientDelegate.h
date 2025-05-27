@@ -49,6 +49,8 @@ public:
 
   ~CCefClientDelegate();
 
+  void clearJSDialogMap();
+
   virtual void processUrlRequest(CefRefPtr<CefBrowser>& browser,
                                  CefRefPtr<CefFrame>& frame,
                                  const CefString& url) override;

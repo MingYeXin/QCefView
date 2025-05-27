@@ -1,4 +1,4 @@
-#include <QCefView.h>
+﻿#include <QCefView.h>
 
 #pragma region qt_headers
 #include <QPainter>
@@ -63,6 +63,14 @@ QCefView::~QCefView()
     // destroy under layer cef browser
     d_ptr->destroyCefBrowser();
     d_ptr.reset();
+  }
+}
+
+void
+QCefView::clearJSDialogMap()
+{
+  if (d_ptr) {
+    d_ptr->clearJSDialogMap();
   }
 }
 

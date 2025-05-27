@@ -10,11 +10,31 @@
 CCefClientDelegate::CCefClientDelegate(QCefViewPrivate* p)
   : pCefViewPrivate_(p)
 {
+  pendingDownloadItemMap_.clear();
+  confirmedDownloadItemMap_.clear();
+  pendingJSDialogMap_.clear();
 }
 
 CCefClientDelegate::~CCefClientDelegate()
 {
   qDebug() << "CCefClientDelegate is being destructed";
+
+  clearJSDialogMap();
+}
+
+void
+CCefClientDelegate::clearJSDialogMap()
+{
+  /// Called to cancel any pending dialogs and reset any saved dialog state.
+  /// Will be called due to events like page navigation irregardless of whether
+  /// any dialogs are currently pending.
+
+  for (auto dlg : pendingJSDialogMap_) {
+    if (dlg) {
+      dlg->reject();
+    }
+  }
+  pendingJSDialogMap_.clear();
 }
 
 void

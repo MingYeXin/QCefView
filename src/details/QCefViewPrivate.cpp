@@ -205,8 +205,11 @@ QCefViewPrivate::destroyCefBrowser()
 {
   qDebug() << "destroy browser from native";
 
-  if (!pClient_)
+  clearJSDialogMap();
+
+  if (!pClient_) {
     return;
+  }
 
   if (!isOSRModeEnabled_) {
     // remove from parent, prevent from being destroyed
@@ -219,6 +222,14 @@ QCefViewPrivate::destroyCefBrowser()
   pClient_->CloseAllBrowsers();
   pClient_ = nullptr;
   pCefBrowser_ = nullptr;
+}
+
+void
+QCefViewPrivate::clearJSDialogMap()
+{
+  if (pClientDelegate_) {
+    pClientDelegate_->clearJSDialogMap();
+  }
 }
 
 void
@@ -482,8 +493,8 @@ QCefViewPrivate::onAppFocusChanged(QWidget* old, QWidget* now)
 {
   Q_Q(QCefView);
 
-  qDebug() << q << q->window()->isActiveWindow() << ":focus changed from:" << old << " -> " << now;
-  qDebug() << q->windowHandle() << "focusWindow:" << QGuiApplication::focusWindow();
+  //qDebug() << q << q->window()->isActiveWindow() << ":focus changed from:" << old << " -> " << now;
+  //qDebug() << q->windowHandle() << "focusWindow:" << QGuiApplication::focusWindow();
 
   if (!now || now->window() != q->window())
     return;

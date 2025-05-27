@@ -45,9 +45,16 @@ CCefClientDelegate::onJSDialog(CefRefPtr<CefBrowser>& browser,
   switch (dialog_type) {
     case CefJSDialogHandler::JSDialogType::JSDIALOGTYPE_ALERT: {
       QMetaObject::invokeMethod(pCefViewPrivate_, [=]() {
-        QMessageBox msgBox(pCefViewPrivate_->q_func());
+        QMessageBox msgBox;
+#if 0
         auto title = CefFormatUrlForSecurityDisplay(origin_url);
         msgBox.setWindowTitle(title.ToString().c_str());
+#elif 0
+        std::string title = "Javascript Alert";
+        msgBox.setWindowTitle(title.c_str());
+#else
+        // 默认使用调用程序名称作为窗口标题
+#endif
         msgBox.setText(message_text.ToString().c_str());
         msgBox.setStandardButtons(QMessageBox::StandardButton::Ok);
 
@@ -57,15 +64,24 @@ CCefClientDelegate::onJSDialog(CefRefPtr<CefBrowser>& browser,
         // remove from pending map
         pendingJSDialogMap_.remove(&msgBox);
 
-        callback->Continue(true, "");
+        if (callback) {
+          callback->Continue(true, "");
+        }
       });
       return true;
     } break;
     case CefJSDialogHandler::JSDialogType::JSDIALOGTYPE_CONFIRM: {
       QMetaObject::invokeMethod(pCefViewPrivate_, [=]() {
-        QMessageBox msgBox(pCefViewPrivate_->q_func());
+        QMessageBox msgBox;
+#if 0
         auto title = CefFormatUrlForSecurityDisplay(origin_url);
         msgBox.setWindowTitle(title.ToString().c_str());
+#elif 0
+        std::string title = "Javascript Confirm";
+        msgBox.setWindowTitle(title.c_str());
+#else
+        // 默认使用调用程序名称作为窗口标题
+#endif
         msgBox.setIcon(QMessageBox::Question);
         msgBox.setText(message_text.ToString().c_str());
         msgBox.setStandardButtons(QMessageBox::StandardButton::Ok | QMessageBox::StandardButton::Cancel);
@@ -76,16 +92,24 @@ CCefClientDelegate::onJSDialog(CefRefPtr<CefBrowser>& browser,
         // remove from pending map
         pendingJSDialogMap_.remove(&msgBox);
 
-        callback->Continue(QMessageBox::Ok == ret, "");
+        if (callback) {
+          callback->Continue(QMessageBox::Ok == ret, "");
+        }
       });
       return true;
     } break;
     case CefJSDialogHandler::JSDialogType::JSDIALOGTYPE_PROMPT: {
       QMetaObject::invokeMethod(pCefViewPrivate_, [=]() {
-        QInputDialog inputDialog(pCefViewPrivate_->q_func());
-
+        QInputDialog inputDialog;
+#if 0
         auto title = CefFormatUrlForSecurityDisplay(origin_url);
         inputDialog.setWindowTitle(title.ToString().c_str());
+#elif 0
+        std::string title = "Javascript Prompt";
+        inputDialog.setWindowTitle(title.c_str());
+#else
+        // 默认使用调用程序名称作为窗口标题
+#endif
         inputDialog.setLabelText(message_text.ToString().c_str());
         inputDialog.setTextValue(default_prompt_text.ToString().c_str());
         inputDialog.setTextEchoMode(QLineEdit::Normal);
@@ -96,8 +120,10 @@ CCefClientDelegate::onJSDialog(CefRefPtr<CefBrowser>& browser,
         // remove from pending map
         pendingJSDialogMap_.remove(&inputDialog);
 
-        CefString userInput(inputDialog.textValue().toStdString());
-        callback->Continue(!!ret, (!!ret) ? userInput : "");
+        if (callback) {
+          CefString userInput(inputDialog.textValue().toStdString());
+          callback->Continue(!!ret, (!!ret) ? userInput : "");
+        }
       });
       return true;
     } break;

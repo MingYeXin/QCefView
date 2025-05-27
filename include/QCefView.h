@@ -107,6 +107,11 @@ public:
   ~QCefView();
 
   /// <summary>
+  /// Clear the js dialog
+  /// </summary>
+  void clearJSDialogMap();
+
+  /// <summary>
   /// Adds a url mapping item with local web resource directory
   /// </summary>
   /// <param name="path">The path to the local resource directory</param>
