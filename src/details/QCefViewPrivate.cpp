@@ -37,6 +37,95 @@
 
 QSet<QCefViewPrivate*> QCefViewPrivate::sLiveInstances;
 
+#ifdef Q_OS_WIN
+#include <Windows.h>
+
+HICON
+QPixmapToHICON(const QPixmap &pixmap)
+{
+  if (pixmap.isNull()) {
+    return HICON();
+  }
+
+  // 获取像素数据和尺寸
+  QImage image = pixmap.toImage();
+  int width = image.width();
+  int height = image.height();
+
+  // HBITMAP
+  // 转换为 Windows 位图格式（通常是 32 位 ARGB）
+  // 注意：Windows GDI 使用 BGR 顺序，而 Qt 可能使用 RGB，需进行通道转换
+  uint32_t *pixels = (uint32_t*)image.bits();
+  // 创建 Windows HBITMAP
+  BITMAPINFO bmiBitmap = { 0 };
+  bmiBitmap.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+  bmiBitmap.bmiHeader.biWidth = width;
+  bmiBitmap.bmiHeader.biHeight = -height; // 负数表示 top-down 位图
+  bmiBitmap.bmiHeader.biPlanes = 1;
+  bmiBitmap.bmiHeader.biBitCount = 32;
+  bmiBitmap.bmiHeader.biCompression = BI_RGB;
+  void *bitmapData = nullptr;
+  HBITMAP hBitmap = CreateDIBSection(NULL, &bmiBitmap, DIB_RGB_COLORS, &bitmapData, NULL, 0);
+  // 复制像素数据到 HBITMAP
+  memcpy(bitmapData, pixels, width * height * 4); // 32 位 = 4 字节/像素
+
+  // HBITMAP
+  // 创建单色掩码位图（1位/像素）
+  BITMAPINFO bmiMask = { 0 };
+  bmiMask.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+  bmiMask.bmiHeader.biWidth = width;
+  bmiMask.bmiHeader.biHeight = height; // 正数表示 bottom-up 位图
+  bmiMask.bmiHeader.biPlanes = 1;
+  bmiMask.bmiHeader.biBitCount = 1;
+  bmiMask.bmiHeader.biCompression = BI_RGB;
+  void *maskData = nullptr;
+  HBITMAP hMask = CreateDIBSection(NULL, &bmiMask, DIB_RGB_COLORS, &maskData, NULL, 0);
+  // 初始化所有位为0（全透明）
+  memset(maskData, 0, ((width + 31) / 32) * 4 /* 计算每行字节数（四字节对齐） */ * height);
+  // 根据 Alpha 通道生成掩码
+  // 注意：Windows 位图是 bottom-up 存储，而 Qt 图像可能是 top-down
+  for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < width; ++x) {
+      QRgb pixel = image.pixel(x, y);
+      uchar alpha = qAlpha(pixel);
+      // Alpha 值大于等于128的像素设为不透明（白色）
+      // 计算字节索引（每行四字节对齐）
+      int bytesPerLine = ((x + 31) / 32) * 4; // 向上取整到最近的四字节
+      int byteIndex = y * bytesPerLine + x / 8;
+      int bitIndex = x % 8;
+      // 获取字节指针并修改特定位
+      unsigned char* bytePtr = static_cast<unsigned char*>(maskData) + byteIndex;
+      if (alpha >= 128) {
+        *bytePtr |= (1 << (7 - bitIndex)); // 设置位为1
+      } else {
+        *bytePtr &= ~(1 << (7 - bitIndex)); // 设置位为0
+      }
+    }
+  }
+
+  // HICON
+  ICONINFO iconInfo = { 0 };
+  iconInfo.fIcon = TRUE;       // 表示这是一个图标
+  iconInfo.hbmColor = hBitmap; // 主位图（颜色）
+  iconInfo.hbmMask = hMask;    // 掩码位图（透明度）
+
+  // 创建 HICON
+  HICON hIcon = CreateIconIndirect(&iconInfo);
+
+  // 释放临时位图
+  if (hBitmap) {
+    DeleteObject(hBitmap);
+  }
+  if (hMask) {
+    DeleteObject(hMask);
+  }
+
+  return hIcon;
+}
+#elif defined(Q_OS_MAC)
+#else
+#endif
+
 void
 QCefViewPrivate::destroyAllInstance()
 {
@@ -405,6 +494,45 @@ QCefViewPrivate::onBeforeNewPopupCreate(const QCefFrameId& sourceFrameId,
 void
 QCefViewPrivate::onAfterCefPopupCreated(CefRefPtr<CefBrowser> browser)
 {
+  Q_Q(QCefView);
+
+  if (browser && browser->GetHost()) {
+    QIcon restoredIcon = QIcon();
+    // 尝试从自定义数据中获取把窗口图标
+    QVariant iconProperty = q->property("newPopupIcon");
+    if (iconProperty.canConvert<QIcon>()) {
+      restoredIcon = iconProperty.value<QIcon>();
+    }
+    if (restoredIcon.isNull()) {
+      // 尝试获取主界面的窗口图标
+      iconProperty = q_ptr->windowIcon();
+      if (iconProperty.canConvert<QIcon>()) {
+        restoredIcon = iconProperty.value<QIcon>();
+      }
+    }
+    if (!restoredIcon.isNull()) {
+      QList<QSize> qSizeList = restoredIcon.availableSizes();
+      if (qSizeList.size() > 0) {
+        QPixmap qPixmap = restoredIcon.pixmap(qSizeList[0]);
+        if (!qPixmap.isNull()) {
+#ifdef Q_OS_WIN
+          HWND browserHWND = static_cast<HWND>(browser->GetHost()->GetWindowHandle());
+          if (browserHWND) {
+            // 转换成 HICON
+            HICON hIcon = QPixmapToHICON(qPixmap);
+            if (hIcon) {
+              // 设置小图标（窗口标题栏）
+              SendMessage(browserHWND, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+              // 手动释放
+              DestroyIcon(hIcon);
+            }
+          }
+#elif defined(Q_OS_MAC)
+#endif
+        }
+      }
+    }
+  }
 }
 
 void
