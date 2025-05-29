@@ -275,13 +275,20 @@ target_link_libraries(QCefView
   Qt${QT_VERSION_MAJOR}::Widgets
 )
 
-# 查找 IOSurface.framework（仅 macOS）
+# 查找 macOS 相关库文件
 if(APPLE)
-  find_library(F_IOSURFACE_FRAMEWORK IOSurface)
-  if(F_IOSURFACE_FRAMEWORK)
+  find_library(IOSURFACE_FRAMEWORK IOSurface)
+  if(IOSURFACE_FRAMEWORK)
     target_link_libraries(QCefView PRIVATE ${IOSURFACE_FRAMEWORK})
   else()
     message(FATAL_ERROR "找不到：IOSurface.framework")
+  endif()
+
+  find_library(CORE_GRAPHICS_FRAMEWORK CoreGraphics)
+  if(CORE_GRAPHICS_FRAMEWORK)
+    target_link_libraries(QCefView PRIVATE ${CORE_GRAPHICS_FRAMEWORK})
+  else()
+    message(FATAL_ERROR "找不到：CoreGraphics.framework")
   endif()
 endif()
 
