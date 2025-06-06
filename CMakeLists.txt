@@ -33,19 +33,13 @@ option(USE_SANDBOX
   "Enable CEF Sandbox"
   OFF
 )
+option(USE_GPU_OPTIMUS
+  "Enable GPU Optimus (Only for Windows and usually not needed)"
+  OFF
+)
 option(USE_WIN_DCOMPOSITION
   "Enabled Windows direct composition for hardware rendering, _WIN32_WINNT >= 0x602 (Windows 8) is required"
   OFF
-)
-
-# Only works for Windows & Linux, always enabled on macOS
-# If enable then:
-# CefSettings.multi_threaded_message_loop = false && CefSettings.external_message_pump = true
-# else:
-# CefSettings.multi_threaded_message_loop = true && CefSettings.external_message_pump = false
-option(USE_QT_EVENT_LOOP
-  "Enable the integration of CEF message loop thread into Qt event loop"
-  ON
 )
 
 # append cmake config module path

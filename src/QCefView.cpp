@@ -29,25 +29,21 @@ QCefView::QCefView(const QString& url,
   : QWidget(parent, f)
   , d_ptr(new QCefViewPrivate(QCefContext::instance()->d_func(), this))
 {
-  // create browser
-  d_ptr->createCefBrowser(this, url, setting ? setting->d_func() : nullptr);
-
-  // set window attributes for OSR mode
   if (d_ptr->isOSRModeEnabled_) {
-    // OSR mode
-    setBackgroundRole(QPalette::Window);
+    setAttribute(Qt::WA_NativeWindow);
+    setAttribute(Qt::WA_DontCreateNativeAncestors);
     setAttribute(Qt::WA_OpaquePaintEvent);
     setAttribute(Qt::WA_NoSystemBackground);
-    // import for hardware rendering
-    if (d_ptr->osr.pRenderer_ && d_ptr->osr.pRenderer_->isHardware()) {
-      setAttribute(Qt::WA_PaintOnScreen);
-    }
+    setAttribute(Qt::WA_PaintOnScreen);
   }
 
   // track mouse
   setMouseTracking(true);
   // set focus policy
   setFocusPolicy(Qt::WheelFocus);
+
+  // create browser
+  d_ptr->createCefBrowser(url, setting ? setting->d_func() : nullptr);
 }
 
 QCefView::QCefView(QWidget* parent /*= 0*/, Qt::WindowFlags f /*= Qt::WindowFlags()*/)
@@ -233,19 +229,11 @@ QCefView::setPreference(const QString& name, const QVariant& value, const QStrin
 }
 
 void
-QCefView::setDisablePopupContextMenu(bool disable)
+QCefView::setOSRFrameRate(int fps)
 {
   Q_D(QCefView);
 
-  d->disablePopupContextMenu_ = disable;
-}
-
-bool
-QCefView::isPopupContextMenuDisabled()
-{
-  Q_D(QCefView);
-
-  return d->disablePopupContextMenu_;
+  return d->setOSRFrameRate(fps);
 }
 
 bool
@@ -273,27 +261,35 @@ QCefView::closeDevTools()
 }
 
 void
-QCefView::setEnableDragAndDrop(bool enable)
+QCefView::setAllowDrag(bool allow)
 {
   Q_D(QCefView);
 
-  d->enableDragAndDrop_ = enable;
+  d->allowDrag_ = allow;
 }
 
 bool
-QCefView::isDragAndDropEnabled() const
+QCefView::allowDrag() const
 {
   Q_D(const QCefView);
 
-  return d->enableDragAndDrop_;
+  return d->allowDrag_;
 }
 
 void
-QCefView::setFocus(Qt::FocusReason reason)
+QCefView::setZoomLevel(double level)
 {
   Q_D(QCefView);
 
-  d->setCefWindowFocus(true);
+  d->setZoomLevel(level);
+}
+
+double
+QCefView::zoomLevel()
+{
+  Q_D(QCefView);
+
+  return d->zoomLevel();
 }
 
 QCefView*
@@ -352,18 +348,6 @@ QCefView::onRequestCloseFromWeb()
   return true;
 }
 
-void
-QCefView::leaveEvent(QEvent* event)
-{
-  Q_D(QCefView);
-
-  QPoint mousePos = QCursor::pos();
-  QMouseEvent moveEvent(QEvent::MouseMove, mousePos, mousePos, Qt::NoButton, Qt::NoButton, Qt::NoModifier);
-  d->onViewMouseEvent(&moveEvent);
-
-  QWidget::leaveEvent(event);
-}
-
 QVariant
 QCefView::inputMethodQuery(Qt::InputMethodQuery query) const
 {
@@ -379,133 +363,105 @@ QCefView::inputMethodQuery(Qt::InputMethodQuery query) const
   return QWidget::inputMethodQuery(query);
 }
 
-void
-QCefView::render(QPainter* painter)
-{
-  Q_D(QCefView);
-
-  d->render(painter);
-}
-
 QPaintEngine*
 QCefView::paintEngine() const
 {
   Q_D(const QCefView);
 
-  if (d->isOSRModeEnabled_ && d->osr.pRenderer_ && d->osr.pRenderer_->isHardware()) {
+  if (d->isOSRModeEnabled_) {
     return nullptr;
   }
 
   return QWidget::paintEngine();
 }
 
-void
-QCefView::paintEvent(QPaintEvent* event)
+bool
+QCefView::event(QEvent* event)
 {
   Q_D(QCefView);
 
-  d->onPaintEvent(event);
-}
+  switch (event->type()) {
+    case QEvent::Paint: {
+      QPaintEvent* e = static_cast<QPaintEvent*>(event);
+      d->onPaintEvent(e);
+    } break;
+    case QEvent::InputMethod: {
+      QInputMethodEvent* e = static_cast<QInputMethodEvent*>(event);
+      d->onViewInputMethodEvent(e);
+    } break;
+    case QEvent::Show: {
+      d->onViewVisibilityChanged(true);
+    } break;
+    case QEvent::Hide: {
+      d->onViewVisibilityChanged(false);
+    } break;
+    case QEvent::FocusIn: {
+      d->onViewFocusChanged(true);
+      if (!d->isOSRModeEnabled_) {
+        return true;
+      }
+    } break;
+    case QEvent::FocusOut: {
+      d->onViewFocusChanged(false);
+      if (!d->isOSRModeEnabled_) {
+        return true;
+      }
+    } break;
+    case QEvent::Move: {
+      d->onViewMoved();
+    } break;
+    case QEvent::Resize: {
+      QResizeEvent* e = static_cast<QResizeEvent*>(event);
+      d->onViewSizeChanged(e->size(), e->oldSize());
+    } break;
+    case QEvent::KeyPress:
+    case QEvent::KeyRelease: {
+      QKeyEvent* e = static_cast<QKeyEvent*>(event);
+      d->onViewKeyEvent(e);
+      if (d->isOSRModeEnabled_ && (e->key() == Qt::Key_Tab || e->key() == Qt::Key_Backtab)) {
+        return true;
+      }
+    } break;
+    case QEvent::MouseMove:
+    case QEvent::MouseButtonPress:
+    case QEvent::MouseButtonRelease: {
+      QMouseEvent* e = static_cast<QMouseEvent*>(event);
+      d->onViewMouseEvent(e);
+    } break;
+    case QEvent::Wheel: {
+      QWheelEvent* e = static_cast<QWheelEvent*>(event);
+      d->onViewWheelEvent(e);
+    } break;
+    case QEvent::Leave: {
+      QPoint mousePos = QCursor::pos();
+      QMouseEvent moveEvent(QEvent::MouseMove, mousePos, mousePos, Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+      d->onViewMouseEvent(&moveEvent);
+    } break;
+    case QEvent::ContextMenu: {
+      QContextMenuEvent* e = static_cast<QContextMenuEvent*>(event);
+      d->onContextMenuEvent(mapToGlobal(e->pos()));
+    } break;
+    case QEvent::DragEnter: {
+      if (d->isOSRModeEnabled_) {
+        QDragEnterEvent* e = static_cast<QDragEnterEvent*>(event);
+        d->onDragEnter(e);
+      }
+    } break;
+    case QEvent::DragMove: {
+      QDragMoveEvent* e = static_cast<QDragMoveEvent*>(event);
+      d->onDragMove(e);
+    } break;
+    case QEvent::DragLeave: {
+      QDragLeaveEvent* e = static_cast<QDragLeaveEvent*>(event);
+      d->onDragLeave(e);
+    } break;
+    case QEvent::Drop: {
+      QDropEvent* e = static_cast<QDropEvent*>(event);
+      d->onDrop(e);
+    } break;
+    default:
+      break;
+  }
 
-void
-QCefView::inputMethodEvent(QInputMethodEvent* event)
-{
-  Q_D(QCefView);
-  d->onViewInputMethodEvent(event);
-}
-
-void
-QCefView::showEvent(QShowEvent* event)
-{
-  Q_D(QCefView);
-  d->onViewVisibilityChanged(true);
-  QWidget::showEvent(event);
-}
-
-void
-QCefView::hideEvent(QHideEvent* event)
-{
-  Q_D(QCefView);
-  d->onViewVisibilityChanged(false);
-  QWidget::hideEvent(event);
-}
-
-void
-QCefView::focusInEvent(QFocusEvent* event)
-{
-  Q_D(QCefView);
-  d->onViewFocusChanged(true);
-  QWidget::focusInEvent(event);
-}
-
-void
-QCefView::focusOutEvent(QFocusEvent* event)
-{
-  Q_D(QCefView);
-  d->onViewFocusChanged(false);
-  QWidget::focusOutEvent(event);
-}
-
-void
-QCefView::resizeEvent(QResizeEvent* event)
-{
-  Q_D(QCefView);
-  d->onViewSizeChanged(event->size(), event->oldSize());
-  QWidget::resizeEvent(event);
-}
-
-void
-QCefView::keyPressEvent(QKeyEvent* event)
-{
-  Q_D(QCefView);
-  d->onViewKeyEvent(event);
-  QWidget::keyPressEvent(event);
-}
-
-void
-QCefView::keyReleaseEvent(QKeyEvent* event)
-{
-  Q_D(QCefView);
-  d->onViewKeyEvent(event);
-  QWidget::keyReleaseEvent(event);
-}
-
-void
-QCefView::mouseMoveEvent(QMouseEvent* event)
-{
-  Q_D(QCefView);
-  d->onViewMouseEvent(event);
-  QWidget::mouseMoveEvent(event);
-}
-
-void
-QCefView::mousePressEvent(QMouseEvent* event)
-{
-  Q_D(QCefView);
-  d->onViewMouseEvent(event);
-  QWidget::mousePressEvent(event);
-}
-
-void
-QCefView::mouseReleaseEvent(QMouseEvent* event)
-{
-  Q_D(QCefView);
-  d->onViewMouseEvent(event);
-  QWidget::mouseReleaseEvent(event);
-}
-
-void
-QCefView::wheelEvent(QWheelEvent* event)
-{
-  Q_D(QCefView);
-  d->onViewWheelEvent(event);
-  QWidget::wheelEvent(event);
-}
-
-void
-QCefView::contextMenuEvent(QContextMenuEvent* event)
-{
-  Q_D(QCefView);
-  d->onContextMenuEvent(mapToGlobal(event->pos()));
-  QWidget::contextMenuEvent(event);
+  return QWidget::event(event);
 }

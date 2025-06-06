@@ -57,7 +57,7 @@ public:
   /// The main frame identity
   /// </summary>
   static const QCefFrameId MainFrameID;
-  
+
   /// <summary>
   /// The identifier for all frames
   /// </summary>
@@ -256,16 +256,10 @@ public:
   bool setPreference(const QString& name, const QVariant& value, const QString& error);
 
   /// <summary>
-  /// Sets whether to disable the context menu for popup browser
+  /// Sets the frame rate for OSR (Off-Screen Rendering).
   /// </summary>
-  /// <param name="disable">True to disable; otherwise false</param>
-  void setDisablePopupContextMenu(bool disable);
-
-  /// <summary>
-  /// Gets whether to disable the context menu for popup browser
-  /// </summary>
-  /// <returns>True to disable; otherwise false</returns>
-  bool isPopupContextMenuDisabled();
+  /// <param name="fps">The desired frame rate in frames per second.</param>
+  void setOSRFrameRate(int fps);
 
   /// <summary>
   /// Detects whether this browser has a devtools opened
@@ -284,20 +278,28 @@ public:
   void closeDevTools();
 
   /// <summary>
-  /// Sets whether to enable drag and drop
+  /// Sets whether dragging is allowed.
   /// </summary>
-  /// <param name="enable">True to enable; otherwise false</param>
-  /// <remarks>
-  /// This function does not work for OSR mode. There is a problem, when dragging a file to a non dragging area,
-  /// the content of the file will be displayed. You need to solve the problem yourself.
-  /// </remarks>
-  void setEnableDragAndDrop(bool enable);
+  /// <param name="allow">True to allow dragging; false to disable it.</param>
+  void setAllowDrag(bool allow);
 
   /// <summary>
-  /// Gets whether to enable drag and drop
+  /// Indicates whether drag operations are allowed.
   /// </summary>
-  /// <returns>True to enable; otherwise false</returns>
-  bool isDragAndDropEnabled() const;
+  /// <returns>true if drag operations are permitted; otherwise, false.</returns>
+  bool allowDrag() const;
+
+  /// <summary>
+  /// Sets zoom level.
+  /// </summary>
+  /// <param name="level">The zoom level value.</param>
+  void setZoomLevel(double level);
+
+  /// <summary>
+  /// Get the zoom level value.
+  /// </summary>
+  /// <returns>the zoom level value.</returns>
+  double zoomLevel();
 
 signals:
   /// <summary>
@@ -403,7 +405,7 @@ signals:
   /// </summary>
   /// <param name="browserId">The browser id</param>
   /// <param name="frameId">The frame id</param>
-  /// <param name="query">The full url</param>
+  /// <param name="url">The full url</param>
   void cefUrlRequest(const QCefBrowserId& browserId, const QCefFrameId& frameId, const QString& url);
 
   /// <summary>
@@ -453,7 +455,7 @@ protected:
   /// <summary>
   /// Gets called before a new browser created (only for browser created by non-JavaScript)
   /// </summary>
-  /// <param name="frameId">The source frame id</param>
+  /// <param name="sourceFrameId">The source frame id</param>
   /// <param name="url">The target URL</param>
   /// <param name="name">The target name</param>
   /// <param name="targetDisposition">Target window open method</param>
@@ -477,6 +479,7 @@ protected:
   /// <param name="targetDisposition">Target window open method</param>
   /// <param name="rect">Rect to be used for the popup</param>
   /// <param name="settings">Settings to be used for the popup</param>
+  /// <param name="disableJavascriptAccess">The output value to receive the Javascript access switch</param>
   /// <returns>True to cancel the popup; false to allow</returns>
   virtual bool onNewPopup(const QCefFrameId& frameId,
                           const QString& targetUrl,
@@ -509,28 +512,11 @@ protected:
   virtual bool onRequestCloseFromWeb();
 
 #pragma region QWidget
-public slots:
-  /// <summary>
-  ///
-  /// </summary>
-  inline void setFocus() { setFocus(Qt::OtherFocusReason); }
-
 public:
-  /// <summary>
-  /// Please refer to QWidget::setFocus
-  /// </summary>
-  void setFocus(Qt::FocusReason reason);
-
   /// <summary>
   /// Please refer to QWidget::inputMethodQuery
   /// </summary>
   QVariant inputMethodQuery(Qt::InputMethodQuery query) const override;
-
-  /// <summary>
-  /// Renders the view content to target painter
-  /// </summary>
-  /// <param name="painter">The target painter</param>
-  void render(QPainter* painter);
 
 protected:
   /// <summary>
@@ -539,79 +525,11 @@ protected:
   QPaintEngine* paintEngine() const override;
 
   /// <summary>
-  /// Please refer to QWidget::paintEvent
+  ///
   /// </summary>
-  void paintEvent(QPaintEvent* event) override;
-
-  /// <summary>
-  /// Please refer to QWidget::inputMethodEvent
-  /// </summary>
-  void inputMethodEvent(QInputMethodEvent* event) override;
-
-  /// <summary>
-  /// Please refer to QWidget::showEvent
-  /// </summary>
-  void showEvent(QShowEvent* event) override;
-
-  /// <summary>
-  /// Please refer to QWidget::hideEvent
-  /// </summary>
-  void hideEvent(QHideEvent* event) override;
-
-  /// <summary>
-  /// Please refer to QWidget::focusInEvent
-  /// </summary>
-  void focusInEvent(QFocusEvent* event) override;
-
-  /// <summary>
-  /// Please refer to QWidget::focusOutEvent
-  /// </summary>
-  void focusOutEvent(QFocusEvent* event) override;
-
-  /// <summary>
-  /// Please refer to QWidget::resizeEvent
-  /// </summary>
-  void resizeEvent(QResizeEvent* event) override;
-
-  /// <summary>
-  /// Please refer to QWidget::keyPressEvent
-  /// </summary>
-  void keyPressEvent(QKeyEvent* event) override;
-
-  /// <summary>
-  /// Please refer to QWidget::keyReleaseEvent
-  /// </summary>
-  void keyReleaseEvent(QKeyEvent* event) override;
-
-  /// <summary>
-  /// Please refer to QWidget::mouseMoveEvent
-  /// </summary>
-  void mouseMoveEvent(QMouseEvent* event) override;
-
-  /// <summary>
-  /// Please refer to QWidget::mousePressEvent
-  /// </summary>
-  void mousePressEvent(QMouseEvent* event) override;
-
-  /// <summary>
-  /// Please refer to QWidget::mouseReleaseEvent
-  /// </summary>
-  void mouseReleaseEvent(QMouseEvent* event) override;
-
-  /// <summary>
-  /// Please refer to QWidget::wheelEvent
-  /// </summary>
-  void wheelEvent(QWheelEvent* event) override;
-
-  /// <summary>
-  /// Please refer to QWidget::leaveEvent
-  /// </summary>
-  void leaveEvent(QEvent* event) override;
-
-  /// <summary>
-  /// Please refer to QWidget::contextMenuEvent
-  /// </summary>
-  void contextMenuEvent(QContextMenuEvent* event) override;
+  /// <param name="event"></param>
+  /// <returns></returns>
+  bool event(QEvent* event) override;
 #pragma endregion
 };
 

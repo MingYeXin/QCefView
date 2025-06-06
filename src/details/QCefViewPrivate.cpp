@@ -8,6 +8,7 @@
 #include <QApplication>
 #include <QDebug>
 #include <QDir>
+#include <QDrag>
 #include <QFileDialog>
 #include <QGridLayout>
 #include <QInputMethodQueryEvent>
@@ -31,6 +32,7 @@
 #include "QCefContext.h"
 #include "QCefSettingPrivate.h"
 #include "utils/CommonUtils.h"
+#include "utils/DragAndDropUtils.h"
 #include "utils/KeyboardUtils.h"
 #include "utils/MenuBuilder.h"
 #include "utils/ValueConvertor.h"
@@ -141,7 +143,7 @@ QCefViewPrivate::QCefViewPrivate(QCefContextPrivate* ctx, QCefView* view)
 {
   sLiveInstances.insert(this);
 
-  isOSRModeEnabled_ = pContextPrivate_->cefConfig()->WindowlessRenderingEnabled().toBool();
+  isOSRModeEnabled_ = pContextPrivate_->cefConfig()->windowlessRenderingEnabled().toBool();
 }
 
 QCefViewPrivate::~QCefViewPrivate()
@@ -150,7 +152,7 @@ QCefViewPrivate::~QCefViewPrivate()
 }
 
 void
-QCefViewPrivate::createCefBrowser(QCefView* view, const QString& url, const QCefSettingPrivate* setting)
+QCefViewPrivate::createCefBrowser(const QString& url, const QCefSettingPrivate* setting)
 {
   // 1. create browser client handler delegate
   auto pClientDelegate = std::make_shared<CCefClientDelegate>(this);
@@ -166,81 +168,70 @@ QCefViewPrivate::createCefBrowser(QCefView* view, const QString& url, const QCef
   CefWindowInfo windowInfo;
   if (isOSRModeEnabled_) {
     auto winSize = q_ptr->size();
-    auto winBgColor = browserSettings.background_color;
-
     // set QWidget background
-    QPalette palette = q_ptr->palette();
-    palette.setColor(q_ptr->backgroundRole(),         //
-                     QColor(CefColorGetR(winBgColor), //
-                            CefColorGetG(winBgColor), //
-                            CefColorGetB(winBgColor), //
-                            CefColorGetA(winBgColor)) //
-    );
-    q_ptr->setPalette(palette);
-
-    std::shared_ptr<ICefViewRenderer> renderer;
-#if defined(OS_WINDOWS) || defined(OS_MACOS)
+    QColor background = q_ptr->palette().color(q_ptr->backgroundRole());
+    CefViewRendererPtr renderer;
     // if hardware is enabled
     if (setting && setting->hardwareAcceleration_) {
 #if CEF_VERSION_MAJOR >= 125
       // create hardware renderer if enabled
       if ((renderer = CefViewRendererFactory::createRenderer(true))) {
-        // get window native handle
-        auto wid = reinterpret_cast<void*>(view->winId());
-
         // initialize renderer
-        if (renderer->initialize(wid,              //
+        if (renderer->initialize(q_ptr,            //
                                  winSize.width(),  //
                                  winSize.height(), //
                                  scaleFactor(),    //
-                                 winBgColor        //
+                                 background.rgba() //
                                  )) {
           // OSR with hardware renderer
           osr.pRenderer_ = renderer;
           windowInfo.SetAsWindowless(0);
           windowInfo.shared_texture_enabled = true;
         } else {
-          qWarning() << "Failed to initialize hardware renderer, will fallback to software renderer";
+          qWarning() << "Failed to initialize hardware renderer, will fall back to software renderer";
         }
       } else {
-        qWarning() << "Failed to create hardware renderer, will fallback to software renderer";
+        qWarning() << "Failed to create hardware renderer, will fall back to software renderer";
       }
+    } else {
+      qInfo() << "Hardware Acceleration is disabled";
 #else
       qWarning() << "Hardware Acceleration is supported only on CEF version 125+";
 #endif
-    } else {
-      qInfo() << "Hardware Acceleration is disabled";
     }
-#endif
 
     // if hardware renderer is not enabled or failed to create it
-    // fallback to software renderer
+    // fall back to software renderer
     if (!osr.pRenderer_) {
       // create software renderer
       if ((renderer = CefViewRendererFactory::createRenderer(false))) {
         // initialize renderer
-        auto ws = q_ptr->size();
-        if (renderer->initialize(nullptr,          //
+        if (renderer->initialize(q_ptr,            //
                                  winSize.width(),  //
                                  winSize.height(), //
                                  scaleFactor(),    //
-                                 winBgColor        //
+                                 background.rgba() //
                                  )) {
           // OSR with software renderer
           osr.pRenderer_ = renderer;
           windowInfo.SetAsWindowless(0);
           windowInfo.shared_texture_enabled = false;
         } else {
-          qWarning() << "Failed to initialize hardware renderer";
+          qWarning() << "Failed to initialize software renderer";
         }
       } else {
-        qWarning() << "Failed to create hardware renderer";
+        qWarning() << "Failed to create software renderer";
       }
     }
 
+    Q_ASSERT_X(                            //
+      osr.pRenderer_,                      //
+      "QCefViewPrivate::createCefBrowser", //
+      "Failed to create osr renderer"      //
+    );
     if (!osr.pRenderer_) {
       // all renderer were failed to create or initialize
-      // I don't know what to do
+      qCritical() << "QCefViewPrivate::createCefBrowser: Failed to create osr renderer.";
     }
   } else {
 #if CEF_VERSION_MAJOR >= 125
@@ -274,9 +265,13 @@ QCefViewPrivate::createCefBrowser(QCefView* view, const QString& url, const QCef
                                                browserSettings,   // settings
                                                nullptr,
                                                CefRequestContext::GetGlobalContext());
-  Q_ASSERT_X(success, "QCefViewPrivate::createBrowser", "Failed to create cef browser");
+  Q_ASSERT_X(                         //
+    success,                          //
+    "QCefViewPrivate::createBrowser", //
+    "Failed to create cef browser"    //
+  );
   if (!success) {
-    qWarning() << "Failed to create cef browser";
+    qCritical() << "QCefViewPrivate::createBrowser: Failed to create cef browser";
     return;
   }
 
@@ -391,11 +386,13 @@ QCefViewPrivate::onCefBrowserCreated(CefRefPtr<CefBrowser> browser, QWindow* win
 
     // create widget for cef window
     ncw.qBrowserWidget_ = ncw.qBrowserWindow_->attachCefWindow(window, q_ptr);
-    Q_ASSERT_X(ncw.qBrowserWidget_,                 //
-               "QCefViewPrivateNCW::createBrowser", //
-               "Failed to create QWidget from cef browser window");
+    Q_ASSERT_X(                                                //
+      ncw.qBrowserWidget_,                                     //
+      "QCefViewPrivate::onCefBrowserCreated",                  //
+      "Failed to create alien QWidget from cef browser window" //
+    );
     if (!ncw.qBrowserWidget_) {
-      qWarning() << "Failed to create QWidget from cef browser window";
+      qCritical() << "QCefViewPrivate::onCefBrowserCreated: Failed to create QWidget from cef browser window";
       browser->GetHost()->CloseBrowser(true);
       return;
     }
@@ -437,17 +434,20 @@ QCefViewPrivate::onCefBrowserCreated(CefRefPtr<CefBrowser> browser, QWindow* win
     QGridLayout* layout = new QGridLayout(q_ptr);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->addWidget(ncw.qBrowserWidget_);
-
-    // monitor the focus changed event globally
-    connect(qApp,                                        //
-            SIGNAL(focusChanged(QWidget*, QWidget*)),    //
-            this,                                        //
-            SLOT(onAppFocusChanged(QWidget*, QWidget*)), //
-            Qt::UniqueConnection                         //
-    );
   }
 
   emit q_ptr->sigCefBrowserCreated();
+#if defined(QT_DEBUG)
+  //  monitor the focus changed event globally
+  connect(qApp,                        //
+          &QApplication::focusChanged, //
+          [](QWidget* old, QWidget* now) {
+            qDebug() << "Focus changed from:"                                            //
+                     << old << "[" << (old ? old->window()->windowHandle() : 0x0) << "]" //
+                     << "->"                                                             //
+                     << now << "[" << (now ? now->window()->windowHandle() : 0x00) << "]";
+          });
+#endif
 }
 
 bool
@@ -584,27 +584,6 @@ QCefViewPrivate::requestCloseFromWeb(CefRefPtr<CefBrowser>& browser)
   return q->onRequestCloseFromWeb();
 }
 
-void
-QCefViewPrivate::render(QPainter* painter)
-{
-  Q_Q(QCefView);
-
-  if (isOSRModeEnabled_) {
-    if (osr.pRenderer_->isHardware()) {
-      // render cef view
-      osr.pRenderer_->render(nullptr);
-    } else {
-      // paint widget with its stylesheet
-      QStyleOption opt;
-      opt.initFrom(q);
-      q->style()->drawPrimitive(QStyle::PE_Widget, &opt, painter, q);
-
-      // render cef view
-      osr.pRenderer_->render(painter);
-    }
-  }
-}
-
 qreal
 QCefViewPrivate::scaleFactor()
 {
@@ -614,32 +593,6 @@ QCefViewPrivate::scaleFactor()
   qreal scaleFactor = q_ptr->devicePixelRatio();
 #endif
   return scaleFactor;
-}
-
-void
-QCefViewPrivate::onAppFocusChanged(QWidget* old, QWidget* now)
-{
-  Q_Q(QCefView);
-
-  //qDebug() << q << q->window()->isActiveWindow() << ":focus changed from:" << old << " -> " << now;
-  //qDebug() << q->windowHandle() << "focusWindow:" << QGuiApplication::focusWindow();
-
-  if (!now || now->window() != q->window())
-    return;
-
-  if (now == q) {
-    // QCefView got focus, need to move the focus to the CEF browser window
-    // This only works when changing focus by TAB key
-    if (old && old->window() == q->window())
-      setCefWindowFocus(true);
-  } else {
-    // Because setCefWindowFocus will not release CEF browser window focus,
-    // here we need to activate the new focused widget forcefully.
-    // This code should be executed only when click any focus except
-    // the QCefView while QCefView is holding the focus
-    if (!old && !QGuiApplication::focusWindow())
-      now->activateWindow();
-  }
 }
 
 void
@@ -654,8 +607,10 @@ QCefViewPrivate::onViewScreenChanged(QScreen* screen)
 
   if (isOSRModeEnabled_) {
     // OSR mode
-    if (pCefBrowser_)
+    if (pCefBrowser_) {
+      pCefBrowser_->GetHost()->WasResized();
       pCefBrowser_->GetHost()->NotifyScreenInfoChanged();
+    }
   } else {
     if (ncw.qBrowserWindow_)
       ncw.qBrowserWindow_->applyMask(q->mask());
@@ -683,26 +638,25 @@ QCefViewPrivate::onCefWindowLostTabFocus(bool next)
     widget->setFocus(reason);
     widget->activateWindow();
   }
-
-  // update cef focus status
-  if (isOSRModeEnabled_) {
-    osr.hasCefGotFocus_ = false;
-  }
 }
 
 void
 QCefViewPrivate::onCefWindowGotFocus()
 {
-  // qDebug() << "cefwindow got focus";
+  qDebug() << "----- QCefViewPrivate::onCefWindowGotFocus()";
   Q_Q(QCefView);
-  QWidget* focusedWidget = qApp->focusWidget();
-  if (focusedWidget && focusedWidget != q) {
-    focusedWidget->clearFocus();
-  }
 
-  // update cef focus status
   if (isOSRModeEnabled_) {
-    osr.hasCefGotFocus_ = true;
+    // OSR mode, sync focus status
+    if (!q->hasFocus()) {
+      q->setFocus();
+    }
+  } else {
+    // NCW mode, clear previous focus
+    QWidget* focusWidget = qApp->focusWidget();
+    if (focusWidget && focusWidget != q) {
+      focusWidget->clearFocus();
+    }
   }
 }
 
@@ -726,7 +680,7 @@ QCefViewPrivate::onCefInputStateChanged(bool editable)
 void
 QCefViewPrivate::onOsrImeCursorRectChanged(const QRect& rc)
 {
-  osr.qImeCursorRect_ = rc;
+  osr.imeCursorRect_ = rc;
   auto inputMethod = QGuiApplication::inputMethod();
   if (inputMethod) {
     inputMethod->update(Qt::ImCursorRectangle);
@@ -762,6 +716,49 @@ QCefViewPrivate::onContextMenuDestroyed(QObject* obj)
   }
 
   osr.isShowingContextMenu_ = false;
+}
+
+void
+QCefViewPrivate::onStartDragging(CefRefPtr<CefDragData>& dragData, CefRenderHandler::DragOperationsMask allowedOps)
+{
+  Q_Q(QCefView);
+
+  Qt::DropAction dropAction = Qt::IgnoreAction;
+
+  // create drag
+  if (QMimeData* mimeData = CreateQMimeDataFromCefDragData(*dragData)) {
+    QDrag drag(q);
+    drag.setMimeData(mimeData);
+
+    CefRefPtr<CefImage> image = dragData->GetImage();
+    if (image) {
+      int w = 0;
+      int h = 0;
+      if (auto pngData = image->GetAsPNG(1.0, true, w, h)) {
+        QPixmap pixmap;
+        pixmap.loadFromData((const uchar*)(pngData->GetRawData()), (int)(pngData->GetSize()));
+        pixmap.setDevicePixelRatio(scaleFactor());
+        drag.setPixmap(pixmap);
+      }
+
+      CefPoint hotspot = dragData->GetImageHotspot();
+      drag.setHotSpot(QPoint(hotspot.x, hotspot.y));
+    }
+
+    // execute dragging
+    dropAction = drag.exec(MapCefDragOperationToQDropAction(allowedOps));
+  }
+
+  // notify cef that the drag ends
+  if (pCefBrowser_) {
+    CefRefPtr<CefBrowserHost> host = pCefBrowser_->GetHost();
+    if (host) {
+      auto result = MapQDropActionToCefDragOperation(dropAction);
+      auto cursor = q->mapFromGlobal(QCursor::pos());
+      host->DragSourceEndedAt(cursor.x(), cursor.y(), result);
+      host->DragSourceSystemDragEnded();
+    }
+  }
 }
 
 void
@@ -837,7 +834,6 @@ QCefViewPrivate::onFileDialog(CefBrowserHost::FileDialogMode mode,
   } else if (mode == FILE_DIALOG_SAVE) {
     dialog.setAcceptMode(QFileDialog::AcceptSave);
   } else {
-    NOTREACHED();
     callback->Cancel();
     return;
   }
@@ -926,54 +922,105 @@ QCefViewPrivate::closeDevTools()
 }
 
 bool
+QCefViewPrivate::shouldAllowDrop(CefRefPtr<CefDragData>& dragData, CefDragHandler::DragOperationsMask mask)
+{
+  Q_Q(QCefView);
+
+  return q->acceptDrops();
+}
+
+bool
+QCefViewPrivate::shouldAllowDrag(CefRefPtr<CefDragData>& dragData,
+                                 CefRenderHandler::DragOperationsMask allowedOps,
+                                 int x,
+                                 int y)
+{
+  // This method only works for OSR mode
+  if (!allowDrag_) {
+    // return false to cancel the drag operation
+    return false;
+  }
+
+  // start dragging
+  QMetaObject::invokeMethod(
+    this, //
+    [this, dragData, allowedOps]() mutable {
+      //
+      this->onStartDragging(dragData, allowedOps);
+    },                   //
+    Qt::QueuedConnection //
+  );
+  return true;
+}
+
+void
+QCefViewPrivate::updateDragOperation(CefRenderHandler::DragOperationsMask allowedOps)
+{
+  if (isOSRModeEnabled_) {
+    osr.allowedDragOperations_ = MapCefDragOperationToQDropAction(allowedOps);
+  }
+}
+
+bool
 QCefViewPrivate::eventFilter(QObject* watched, QEvent* event)
 {
   Q_Q(QCefView);
 
-  auto et = event->type();
-
-#if !defined(Q_OS_MACOS)
-  // monitor the move event of the top-level window and the widget
-  if ((watched == q || watched == q->window()) && (et == QEvent::Move || et == QEvent::Resize)) {
-    notifyMoveOrResizeStarted();
-  }
-#endif
-
-  // if the parent chain changed, we need to re-connect the screenChanged signal
-  if (et == QEvent::ParentChange) {
-    QWidget* w = qobject_cast<QWidget*>(watched);
-    if (w && (w == q || w->isAncestorOf(q))) {
-      // reconnect the screenChanged
-      if (q->window()->windowHandle()) {
-        connect(q->window()->windowHandle(),         //
-                SIGNAL(screenChanged(QScreen*)),     //
-                this,                                //
-                SLOT(onViewScreenChanged(QScreen*)), //
-                Qt::UniqueConnection                 //
+  switch (event->type()) {
+    case QEvent::Move: {
+      // if any ancestor was moved we need to notify CEF
+      QWidget* w = qobject_cast<QWidget*>(watched);
+      if (w && w->isAncestorOf(q)) {
+        notifyMoveOrResizeStarted();
+      }
+    } break;
+    case QEvent::ParentChange: {
+      // if any ancestor's parent was changed,
+      // we need to reconnect the screenChanged signal/slots
+      QWidget* w = qobject_cast<QWidget*>(watched);
+      if (w && w->isAncestorOf(q)) {
+        // disconnect old
+        disconnect(SIGNAL(screenChanged(QScreen*)),    //
+                   this,                               //
+                   SLOT(onViewScreenChanged(QScreen*)) //
         );
-      }
-    }
-  }
 
-  if (isOSRModeEnabled_) {
-    if (watched == q && (et == QEvent::Type::KeyPress || et == QEvent::Type::KeyRelease)) {
-      QKeyEvent* ke = (QKeyEvent*)event;
-      if (ke->key() == Qt::Key_Tab || ke->key() == Qt::Key_Backtab) {
-        onViewKeyEvent(ke);
-        return true;
-      }
-    }
-  } else {
-    // the surface is about to be destroyed (top-level window is being closed)
-    if (et == QEvent::PlatformSurface) {
-      auto t = ((QPlatformSurfaceEvent*)event)->surfaceEventType();
-      if (QPlatformSurfaceEvent::SurfaceAboutToBeDestroyed == t) {
-        if (watched == ncw.qBrowserWindow_->cefWindow()) {
-          // detach the cef window
-          ncw.qBrowserWindow_->detachCefWindow();
+        // connect new
+        if (q->window()->windowHandle()) {
+          connect(q->window()->windowHandle(),        //
+                  SIGNAL(screenChanged(QScreen*)),    //
+                  this,                               //
+                  SLOT(onViewScreenChanged(QScreen*)) //
+          );
         }
       }
-    }
+    } break;
+    case QEvent::PlatformSurface: {
+      if (!isOSRModeEnabled_) {
+        // the surface is about to be destroyed (top-level window is being closed)
+        auto t = static_cast<QPlatformSurfaceEvent*>(event)->surfaceEventType();
+        if (QPlatformSurfaceEvent::SurfaceAboutToBeDestroyed == t) {
+          if (watched == ncw.qBrowserWindow_->cefWindow()) {
+            // detach the cef window
+            ncw.qBrowserWindow_->detachCefWindow();
+          }
+        }
+      }
+    } break;
+    case QEvent::FocusIn: {
+      if (!isOSRModeEnabled_ && watched == ncw.qBrowserWindow_) {
+        qDebug() << "----- event to ncw.qBrowserWindow_:" << event;
+        q->focusInEvent(static_cast<QFocusEvent*>(event));
+      }
+    } break;
+    case QEvent::FocusOut: {
+      if (!isOSRModeEnabled_ && watched == ncw.qBrowserWindow_) {
+        qDebug() << "----- event to ncw.qBrowserWindow_:" << event;
+        q->focusOutEvent(static_cast<QFocusEvent*>(event));
+      }
+    } break;
+    default:
+      break;
   }
 
   return QObject::eventFilter(watched, event);
@@ -986,7 +1033,7 @@ QCefViewPrivate::onViewInputMethodQuery(Qt::InputMethodQuery query) const
     // OSR mode
     switch (query) {
       case Qt::ImCursorRectangle:
-        return QVariant(osr.qImeCursorRect_);
+        return QVariant(osr.imeCursorRect_);
       case Qt::ImAnchorRectangle:
         break;
       case Qt::ImFont:
@@ -1006,37 +1053,6 @@ QCefViewPrivate::onViewInputMethodQuery(Qt::InputMethodQuery query) const
     }
   }
   return QVariant();
-}
-
-void
-QCefViewPrivate::onPaintEngine(QPaintEngine*& engine) const
-{
-  // if hardware acceleration is available then disable Qt paint
-  if (isOSRModeEnabled_ && osr.pRenderer_ && osr.pRenderer_->isHardware()) {
-    engine = nullptr;
-  }
-}
-
-void
-QCefViewPrivate::onPaintEvent(QPaintEvent* event)
-{
-  Q_Q(QCefView);
-
-  if (osr.pRenderer_ && osr.pRenderer_->isHardware()) {
-    // hardware renderer, there's no painter
-    render(nullptr);
-  } else {
-    // 1. construct painter for current widget
-    QPainter painter(q);
-
-    // 2. paint background with background role
-    // for OSR mode, this makes sure the surface will be cleared before a new drawing
-    // for NCW mode, this makes sure QCefView will not be treated as transparent background
-    painter.fillRect(q->rect(), q->palette().color(q->backgroundRole()));
-
-    // 3. render self
-    render(&painter);
-  }
 }
 
 void
@@ -1098,9 +1114,8 @@ QCefViewPrivate::onViewVisibilityChanged(bool visible)
     if (pCefBrowser_)
       pCefBrowser_->GetHost()->WasHidden(!visible);
   } else {
-    Q_Q(QCefView);
-    if (!ncw.qBrowserWidget_)
-      return;
+    // if (!ncw.qBrowserWidget_)
+    //   return;
 
     //// for better user experience (eliminate flicker), we don't change the size here
     //// if the consumer of QCefView need to constraint the resource
@@ -1120,51 +1135,64 @@ QCefViewPrivate::onViewVisibilityChanged(bool visible)
 void
 QCefViewPrivate::onViewFocusChanged(bool focused)
 {
+  if (!pCefBrowser_)
+    return;
+
   if (isOSRModeEnabled_) {
-    // OSR mode
-    if (!pCefBrowser_)
+    // if context menu is showing we need to skip the focus out event
+    if (osr.isShowingContextMenu_ && !focused)
       return;
 
-    if (focused) {
-      // QCefView gained the focus
-
-      // sync the focus status to CEF browser
-      pCefBrowser_->GetHost()->SetFocus(focused);
-
-      // update cef focus status
-      osr.hasCefGotFocus_ = true;
-    } else {
-      // QCefView released the focus
-
-      // if the context menu is showing we do not clear CEF browser focus
-      if (osr.isShowingContextMenu_)
-        return;
-
-      // clear CEF browser focus for any other reasons
-      pCefBrowser_->GetHost()->SetFocus(focused);
-
-      // update cef focus status
-      osr.hasCefGotFocus_ = false;
-    }
+    // sync focus status to CEF
+    pCefBrowser_->GetHost()->SetFocus(focused);
+  } else {
+    // sync focus status to CEF
+    pCefBrowser_->GetHost()->SetFocus(focused);
   }
+}
+
+void
+QCefViewPrivate::onPaintEvent(QPaintEvent* event)
+{
+  Q_Q(QCefView);
+
+  if (osr.pRenderer_ && pCefBrowser_) {
+    // invalidate the CEF OSR buffer
+    pCefBrowser_->GetHost()->Invalidate(CefBrowserHost::PaintElementType::PET_VIEW);
+  }
+}
+
+void
+QCefViewPrivate::onViewMoved()
+{
+  notifyMoveOrResizeStarted();
 }
 
 void
 QCefViewPrivate::onViewSizeChanged(const QSize& size, const QSize& oldSize)
 {
+  Q_Q(QCefView);
+
+  notifyMoveOrResizeStarted();
+
   if (isOSRModeEnabled_) {
     // OSR mode
+    if (pCefBrowser_) {
+      // invalidate the CEF OSR buffer
+      pCefBrowser_->GetHost()->Invalidate(CefBrowserHost::PaintElementType::PET_VIEW);
+    }
+
     if (osr.pRenderer_) {
-      // reset render
+      // resize render
       osr.pRenderer_->resize(size.width(), size.height(), scaleFactor());
     }
 
+    // OSR mode
     if (pCefBrowser_) {
       // notify CEF of the size changing
       pCefBrowser_->GetHost()->WasResized();
     }
   } else {
-    Q_Q(QCefView);
     if (ncw.qBrowserWindow_) {
       ncw.qBrowserWindow_->applyMask(q->mask());
     }
@@ -1312,6 +1340,115 @@ QCefViewPrivate::onContextMenuEvent(const QPoint& pos)
     if (osr.isShowingContextMenu_) {
       osr.contextMenu_->popup(pos);
     }
+  }
+}
+
+void
+QCefViewPrivate::onDragEnter(QDragEnterEvent* event)
+{
+  if (isOSRModeEnabled_ && pCefBrowser_ && pCefBrowser_->GetHost()) {
+    osr.allowedDragOperations_ = 0;
+
+    CefRefPtr<CefDragData> dragData = CreateCefDragDataFromQMimeData(*(event->mimeData()));
+
+    CefMouseEvent e;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    auto b = event->mouseButtons();
+    auto m = event->keyboardModifiers();
+    e.x = event->pos().x();
+    e.y = event->pos().y();
+#else
+    auto b = event->buttons();
+    auto m = event->modifiers();
+    e.x = event->position().x();
+    e.y = event->position().y();
+#endif
+    e.modifiers |= m & Qt::ControlModifier ? EVENTFLAG_CONTROL_DOWN : 0;
+    e.modifiers |= m & Qt::ShiftModifier ? EVENTFLAG_SHIFT_DOWN : 0;
+    e.modifiers |= m & Qt::AltModifier ? EVENTFLAG_ALT_DOWN : 0;
+    e.modifiers |= b & Qt::LeftButton ? EVENTFLAG_LEFT_MOUSE_BUTTON : 0;
+    e.modifiers |= b & Qt::RightButton ? EVENTFLAG_RIGHT_MOUSE_BUTTON : 0;
+    e.modifiers |= b & Qt::MiddleButton ? EVENTFLAG_MIDDLE_MOUSE_BUTTON : 0;
+
+    auto proposedAction = event->proposedAction();
+    CefBrowserHost::DragOperationsMask allowedOps = MapQDropActionToCefDragOperation(proposedAction);
+    pCefBrowser_->GetHost()->DragTargetDragEnter(dragData, e, allowedOps);
+    pCefBrowser_->GetHost()->DragTargetDragOver(e, allowedOps);
+
+    event->setDropAction(static_cast<Qt::DropAction>(osr.allowedDragOperations_));
+    event->accept();
+  }
+}
+
+void
+QCefViewPrivate::onDragMove(QDragMoveEvent* event)
+{
+  if (isOSRModeEnabled_ && pCefBrowser_ && pCefBrowser_->GetHost()) {
+    CefMouseEvent e;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    auto b = event->mouseButtons();
+    auto m = event->keyboardModifiers();
+    e.x = event->pos().x();
+    e.y = event->pos().y();
+#else
+    auto b = event->buttons();
+    auto m = event->modifiers();
+    e.x = event->position().x();
+    e.y = event->position().y();
+#endif
+    e.modifiers |= m & Qt::ControlModifier ? EVENTFLAG_CONTROL_DOWN : 0;
+    e.modifiers |= m & Qt::ShiftModifier ? EVENTFLAG_SHIFT_DOWN : 0;
+    e.modifiers |= m & Qt::AltModifier ? EVENTFLAG_ALT_DOWN : 0;
+    e.modifiers |= b & Qt::LeftButton ? EVENTFLAG_LEFT_MOUSE_BUTTON : 0;
+    e.modifiers |= b & Qt::RightButton ? EVENTFLAG_RIGHT_MOUSE_BUTTON : 0;
+    e.modifiers |= b & Qt::MiddleButton ? EVENTFLAG_MIDDLE_MOUSE_BUTTON : 0;
+
+    auto proposedAction = event->proposedAction();
+    CefBrowserHost::DragOperationsMask allowedOps = MapQDropActionToCefDragOperation(proposedAction);
+    pCefBrowser_->GetHost()->DragTargetDragOver(e, allowedOps);
+
+    event->setDropAction(static_cast<Qt::DropAction>(osr.allowedDragOperations_));
+    event->accept();
+  }
+}
+
+void
+QCefViewPrivate::onDragLeave(QDragLeaveEvent* event)
+{
+  if (isOSRModeEnabled_ && pCefBrowser_ && pCefBrowser_->GetHost()) {
+    osr.allowedDragOperations_ = 0;
+
+    pCefBrowser_->GetHost()->DragTargetDragLeave();
+  }
+}
+
+void
+QCefViewPrivate::onDrop(QDropEvent* event)
+{
+  if (isOSRModeEnabled_ && pCefBrowser_ && pCefBrowser_->GetHost()) {
+
+    CefMouseEvent e;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    auto b = event->mouseButtons();
+    auto m = event->keyboardModifiers();
+    e.x = event->pos().x();
+    e.y = event->pos().y();
+#else
+    auto b = event->buttons();
+    auto m = event->modifiers();
+    e.x = event->position().x();
+    e.y = event->position().y();
+#endif
+    e.modifiers |= m & Qt::ControlModifier ? EVENTFLAG_CONTROL_DOWN : 0;
+    e.modifiers |= m & Qt::ShiftModifier ? EVENTFLAG_SHIFT_DOWN : 0;
+    e.modifiers |= m & Qt::AltModifier ? EVENTFLAG_ALT_DOWN : 0;
+    e.modifiers |= b & Qt::LeftButton ? EVENTFLAG_LEFT_MOUSE_BUTTON : 0;
+    e.modifiers |= b & Qt::RightButton ? EVENTFLAG_RIGHT_MOUSE_BUTTON : 0;
+    e.modifiers |= b & Qt::MiddleButton ? EVENTFLAG_MIDDLE_MOUSE_BUTTON : 0;
+
+    pCefBrowser_->GetHost()->DragTargetDrop(e);
+
+    event->acceptProposedAction();
   }
 }
 
@@ -1525,12 +1662,14 @@ QCefViewPrivate::executeJavascriptWithResult(const QCefFrameId& frameId,
 void
 QCefViewPrivate::notifyMoveOrResizeStarted()
 {
+#if defined(Q_OS_WINDOWS) || defined(Q_OS_LINUX)
   if (pCefBrowser_) {
     CefRefPtr<CefBrowserHost> host = pCefBrowser_->GetHost();
     if (host) {
       host->NotifyMoveOrResizeStarted();
     }
   }
+#endif
 }
 
 bool
@@ -1587,4 +1726,39 @@ QCefViewPrivate::setPreference(const QString& name, const QVariant& value, const
   }
 
   return false;
+}
+
+void
+QCefViewPrivate::setOSRFrameRate(int fps)
+{
+  if (pCefBrowser_) {
+    CefRefPtr<CefBrowserHost> host = pCefBrowser_->GetHost();
+    if (host) {
+      host->SetWindowlessFrameRate(fps);
+    }
+  }
+}
+
+void
+QCefViewPrivate::setZoomLevel(double level)
+{
+  if (pCefBrowser_) {
+    CefRefPtr<CefBrowserHost> host = pCefBrowser_->GetHost();
+    if (host) {
+      host->SetZoomLevel(level);
+    }
+  }
+}
+
+double
+QCefViewPrivate::zoomLevel()
+{
+  if (pCefBrowser_) {
+    CefRefPtr<CefBrowserHost> host = pCefBrowser_->GetHost();
+    if (host) {
+      return host->GetZoomLevel();
+    }
+  }
+
+  return 0;
 }

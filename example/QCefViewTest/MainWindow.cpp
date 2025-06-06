@@ -36,6 +36,7 @@ MainWindow::MainWindow(QWidget* parent)
   connect(m_ui.btn_setFocus, &QPushButton::clicked, this, &MainWindow::onBtnSetFocusClicked);
   connect(m_ui.btn_callJSCode, &QPushButton::clicked, this, &MainWindow::onBtnCallJSCodeClicked);
   connect(m_ui.btn_newBrowser, &QPushButton::clicked, this, &MainWindow::onBtnNewBrowserClicked);
+  connect(m_ui.cbb_zoomLevel, &QComboBox::currentTextChanged, this, &MainWindow::onCbbZoomLeveChanged);
   connect(m_ui.btn_quitApp, &QPushButton::clicked, qApp, &QCoreApplication::quit);
 
   // build the path to the web resource
@@ -63,18 +64,32 @@ MainWindow::createLeftCefView()
     m_pLeftCefViewWidget = nullptr;
   }
 
+  // Build settings for per QCefView
   QCefSetting setting;
-  setting.setWindowlessFrameRate(1000);
-#if CEF_VERSION_MAJOR >= 125
-  setting.setHardwareAcceleration(false);
-#endif
-  // setting.setBackgroundColor(Qt::magenta);
+  setting.setHardwareAccelerationEnabled(false);
+  setting.setWindowlessFrameRate(120);
+  setting.setBackgroundColor(Qt::cyan);
 
-  m_pLeftCefViewWidget = new CefViewWidget("https://www.testufo.com/", &setting, this);
-  // connect the invokeMethod to the slot
+  m_pLeftCefViewWidget = new QCefView(LEFT_INDEX_URL, &setting, this);
+  // m_pLeftCefViewWidget = new QCefView("https://www.testufo.com", &setting, this);
+
+  // set widget background
+  QPalette pal = m_pLeftCefViewWidget->palette();
+  pal.setColor(QPalette::Window, Qt::white);
+  m_pLeftCefViewWidget->setPalette(pal);
+
+  // set context menu
+  // m_pLeftCefViewWidget->setContextMenuPolicy(Qt::NoContextMenu);
+  // m_pLeftCefViewWidget->setContextMenuPolicy(Qt::ActionsContextMenu);
+  // m_pLeftCefViewWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+  // m_pLeftCefViewWidget->setContextMenuPolicy(Qt::PreventContextMenu);
+  m_pLeftCefViewWidget->setContextMenuPolicy(Qt::DefaultContextMenu);
+
+  // set Drag & Drop
+  m_pLeftCefViewWidget->setAcceptDrops(false);
+  m_pLeftCefViewWidget->setAllowDrag(false);
+
   connect(m_pLeftCefViewWidget, &QCefView::invokeMethod, this, &MainWindow::onInvokeMethod);
-
-  // connect the cefQueryRequest to the slot
   connect(m_pLeftCefViewWidget, &QCefView::cefUrlRequest, this, &MainWindow::onQCefUrlRequest);
   connect(m_pLeftCefViewWidget, &QCefView::cefQueryRequest, this, &MainWindow::onQCefQueryRequest);
   connect(m_pLeftCefViewWidget, &QCefView::reportJavascriptResult, this, &MainWindow::onJavascriptResult);
@@ -93,40 +108,31 @@ MainWindow::createRightCefView()
     m_pRightCefViewWidget = nullptr;
   }
 
-  // build settings for per QCefView
+  // Build settings for per QCefView
   QCefSetting setting;
-#if CEF_VERSION_MAJOR < 100
-  setting.setPlugins(false);
-#endif
-  setting.setWindowlessFrameRate(1000);
-#if CEF_VERSION_MAJOR >= 125
-  setting.setHardwareAcceleration(true);
-#endif
+  setting.setHardwareAccelerationEnabled(true);
+  setting.setWindowlessFrameRate(120);
   QColor background(0, 255, 0, 255);
   setting.setBackgroundColor(background);
 
-  // create the QCefView widget and add it to the layout container
-  // m_pRightCefViewWidget = new QCefView(RIGHT_INDEX_URL, &setting, this);
-  m_pRightCefViewWidget = new QCefView("https://www.testufo.com/", &setting, this);
+  // Create the QCefView widget and add it to the layout container
+  m_pRightCefViewWidget = new QCefView("https://www.testufo.com", &setting, this);
 
-  // auto vl = new QVBoxLayout(m_pRightCefViewWidget);
-  // auto btn = new QPushButton("TEST BUTTON OVERLAY", m_pRightCefViewWidget);
-  //// btn->setFixedSize(320, 240);
-  // btn->setStyleSheet("background-color: rgba(1, 1, 1, 0);");
-  // btn->setAttribute(Qt::WA_TranslucentBackground);
-  // btn->setWindowFlags(Qt::FramelessWindowHint);
-  // btn->setAttribute(Qt::WA_NoSystemBackground);
-  // vl->setAlignment(Qt::AlignVCenter);
+  // Set widget background
+  QPalette pal = m_pRightCefViewWidget->palette();
+  pal.setColor(QPalette::Window, Qt::green);
+  m_pRightCefViewWidget->setPalette(pal);
 
-  // vl->addWidget(btn);
-  // m_pRightCefViewWidget->setLayout(vl);
-
-  // all the following values will disable the context menu for both NCW and OSR mode
+  // set context menu
   // m_pRightCefViewWidget->setContextMenuPolicy(Qt::NoContextMenu);
   // m_pRightCefViewWidget->setContextMenuPolicy(Qt::ActionsContextMenu);
   // m_pRightCefViewWidget->setContextMenuPolicy(Qt::CustomContextMenu);
-  // m_pRightCefViewWidget->setContextMenuPolicy(Qt::PreventContextMenu);
-  m_pRightCefViewWidget->setContextMenuPolicy(Qt::DefaultContextMenu);
+  m_pRightCefViewWidget->setContextMenuPolicy(Qt::PreventContextMenu);
+  // m_pRightCefViewWidget->setContextMenuPolicy(Qt::DefaultContextMenu);
+
+  // set Drag & Drop
+  m_pRightCefViewWidget->setAcceptDrops(true);
+  m_pRightCefViewWidget->setAllowDrag(true);
 
   // add the QCefView widget to the layout
   m_ui.rightCefViewContainer->layout()->addWidget(m_pRightCefViewWidget);
@@ -311,6 +317,15 @@ MainWindow::onBtnNewBrowserClicked()
   w->setCentralWidget(view);
   w->resize(1024, 768);
   w->show();
+}
+
+void
+MainWindow::onCbbZoomLeveChanged(const QString& text)
+{
+  if (m_pLeftCefViewWidget) {
+    double level = text.toDouble();
+    m_pLeftCefViewWidget->setZoomLevel(level);
+  }
 }
 
 #ifndef Q_OS_MACOS

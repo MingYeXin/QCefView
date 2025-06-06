@@ -54,6 +54,10 @@ source_group("Webres Files"
 )
 
 if(OS_WINDOWS)
+  if(USE_GPU_OPTIMUS)
+    add_definitions(-DENABLE_GPU_OPTIMUS=1)
+  endif()
+
   file(GLOB_RECURSE _PLATFORM_SRC_FILES
     "win/*.h"
     "win/*.cpp"
@@ -257,7 +261,7 @@ if(OS_MACOS)
     Qt${QT_VERSION_MAJOR}::Core
     Qt${QT_VERSION_MAJOR}::Gui
     Qt${QT_VERSION_MAJOR}::Widgets
-    $<TARGET_BUNDLE_DIR:QCefView>
+    QCefView
   )
 endif()
 

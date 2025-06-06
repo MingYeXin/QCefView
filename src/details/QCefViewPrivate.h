@@ -45,12 +45,7 @@ public:
   /// <summary>
   ///
   /// </summary>
-  bool disablePopupContextMenu_ = false;
-
-  /// <summary>
-  ///
-  /// </summary>
-  bool enableDragAndDrop_ = false;
+  bool allowDrag_ = false;
 
   /// <summary>
   ///
@@ -84,19 +79,11 @@ public:
   /// </summary>
   struct OsrPrivateData
   {
-    /// <summary>
-    /// workaround for:
-    /// https://github.com/chromiumembedded/cef/issues/3870
-    /// after navigation CEF resets the browser focus status
-    /// without any callback notification (AKA, released the
-    /// focus silently), so we need to keep the CEF browser
-    /// focus status by ourself, and at every loadEnd callback
-    /// we need to sync the status to CEF browser.
-    /// </summary>
-    bool hasCefGotFocus_ = false;
+    // allowed drag operations
+    int32_t allowedDragOperations_;
 
     // IME parameters
-    QRect qImeCursorRect_;
+    QRect imeCursorRect_;
 
     // context menu status and parameters
     bool isShowingContextMenu_ = false;
@@ -104,7 +91,7 @@ public:
     CefRefPtr<CefRunContextMenuCallback> contextMenuCallback_;
 
     // OSR renderer
-    std::shared_ptr<ICefViewRenderer> pRenderer_;
+    CefViewRendererPtr pRenderer_;
   } osr;
 
   /// <summary>
@@ -137,7 +124,7 @@ public:
 
   ~QCefViewPrivate();
 
-  void createCefBrowser(QCefView* view, const QString& url, const QCefSettingPrivate* setting);
+  void createCefBrowser(const QString& url, const QCefSettingPrivate* setting);
 
   void destroyCefBrowser();
 
@@ -183,13 +170,9 @@ protected:
 
   bool requestCloseFromWeb(CefRefPtr<CefBrowser>& browser);
 
-  void render(QPainter* painter);
-
   qreal scaleFactor();
 
 public slots:
-  void onAppFocusChanged(QWidget* old, QWidget* now);
-
   void onViewScreenChanged(QScreen* screen);
 
   void onCefWindowLostTabFocus(bool next);
@@ -205,6 +188,8 @@ public slots:
   void onContextMenuTriggered(QAction* action);
 
   void onContextMenuDestroyed(QObject* obj);
+
+  void onStartDragging(CefRefPtr<CefDragData>& dragData, CefRenderHandler::DragOperationsMask allowedOps);
 
 protected:
   void onBeforeCefContextMenu(const MenuBuilder::MenuData& data);
@@ -228,20 +213,26 @@ protected:
 
   void closeDevTools();
 
+  bool shouldAllowDrop(CefRefPtr<CefDragData>& dragData, CefDragHandler::DragOperationsMask mask);
+
+  bool shouldAllowDrag(CefRefPtr<CefDragData>& dragData, CefRenderHandler::DragOperationsMask allowedOps, int x, int y);
+
+  void updateDragOperation(CefRenderHandler::DragOperationsMask allowedOps);
+
 protected:
   bool eventFilter(QObject* watched, QEvent* event) override;
 
   QVariant onViewInputMethodQuery(Qt::InputMethodQuery query) const;
-
-  void onPaintEngine(QPaintEngine*& engine) const;
-
-  void onPaintEvent(QPaintEvent* event);
 
   void onViewInputMethodEvent(QInputMethodEvent* event);
 
   void onViewVisibilityChanged(bool visible);
 
   void onViewFocusChanged(bool focused);
+
+  void onPaintEvent(QPaintEvent* event);
+
+  void onViewMoved();
 
   void onViewSizeChanged(const QSize& size, const QSize& oldSize);
 
@@ -252,6 +243,14 @@ protected:
   void onViewWheelEvent(QWheelEvent* event);
 
   void onContextMenuEvent(const QPoint& pos);
+
+  void onDragEnter(QDragEnterEvent* event);
+
+  void onDragMove(QDragMoveEvent* event);
+
+  void onDragLeave(QDragLeaveEvent* event);
+
+  void onDrop(QDropEvent* event);
 
 public:
   int browserId();
@@ -292,4 +291,10 @@ public:
   bool sendEventNotifyMessage(const QCefFrameId& frameId, const QString& name, const QVariantList& args);
 
   bool setPreference(const QString& name, const QVariant& value, const QString& error);
+
+  void setOSRFrameRate(int fps);
+
+  void setZoomLevel(double level);
+
+  double zoomLevel();
 };
