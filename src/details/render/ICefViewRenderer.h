@@ -2,22 +2,50 @@
 #define ICEFVIEWRENDERER_H
 
 #pragma once
-#include <memory>
-
 #include <include/cef_app.h>
+#include <include/cef_task.h>
 
-using CefColor = cef_color_t;
+#include <QColor>
+#include <QPointer>
+#include <QSharedPointer>
+#include <QSize>
+#include <QWidget>
 
 /// <summary>
 ///
 /// </summary>
-class ICefViewRenderer
+class ICefViewRenderer : public QObject
 {
+  Q_OBJECT
+
+protected:
+  QPointer<QWidget> m_widget;
+
+  class RenderTask : public CefTask
+  {
+    IMPLEMENT_REFCOUNTING(RenderTask);
+
+    std::function<void()> work;
+
+  public:
+    RenderTask(std::function<void()> t)
+      : work(t)
+    {
+    }
+
+    void Execute() override
+    {
+      if (work) {
+        work();
+      }
+    }
+  };
+
 public:
   /// <summary>
   ///
   /// </summary>
-  virtual ~ICefViewRenderer(){};
+  virtual ~ICefViewRenderer() {};
 
   /// <summary>
   ///
@@ -28,13 +56,13 @@ public:
   /// <summary>
   ///
   /// </summary>
-  /// <param name="wid"></param>
+  /// <param name="widget"></param>
   /// <param name="width"></param>
   /// <param name="height"></param>
   /// <param name="scale"></param>
-  /// <param name="background"></param>
+  /// <param name="clear"></param>
   /// <returns></returns>
-  virtual bool initialize(void* wid, int width, int height, float scale, const CefColor& background) = 0;
+  virtual bool initialize(QWidget* widget, int width, int height, float scale, const QColor& clear) = 0;
 
   /// <summary>
   ///
@@ -64,6 +92,49 @@ public:
   /// <summary>
   ///
   /// </summary>
+  /// <returns></returns>
+  qreal widgetScale()
+  {
+    qreal scale = 1.0f;
+    if (m_widget) {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
+      scale = m_widget->devicePixelRatioF();
+#else
+      scale = m_widget->devicePixelRatio();
+#endif
+    }
+    return scale;
+  }
+
+  /// <summary>
+  ///
+  /// </summary>
+  /// <returns></returns>
+  QSize widgetSize()
+  {
+    QSize size;
+    if (m_widget) {
+      size = m_widget->size();
+    }
+    return size;
+  }
+
+  /// <summary>
+  ///
+  /// </summary>
+  /// <returns></returns>
+  QColor widgetBackground()
+  {
+    QColor background;
+    if (m_widget) {
+      background = m_widget->palette().color(m_widget->backgroundRole());
+    }
+    return background;
+  }
+
+  /// <summary>
+  ///
+  /// </summary>
   enum class FrameDataType
   {
     CpuImage = 0,
@@ -71,22 +142,67 @@ public:
   };
 
   /// <summary>
-  ///
+  /// CEF web content frame data
   /// </summary>
   union FrameData
   {
+    FrameData() {}
+
+    /// <summary>
+    /// CPU image data. (Hardware acceleration disabled)
+    /// </summary>
     struct
     {
-      const void* buffer;
-      int width;
-      int height;
+      /// <summary>
+      ///
+      /// </summary>
+      const void* buffer = nullptr;
+
+      /// <summary>
+      ///
+      /// </summary>
+      int width = 0;
+
+      /// <summary>
+      ///
+      /// </summary>
+      int height = 0;
     } image;
 
+    /// <summary>
+    /// GPU texture data.(Hardware acceleration enabled)
+    /// </summary>
     struct
     {
-      void* handle;
-      int format;
+      /// <summary>
+      ///
+      /// </summary>
+      int format = 0;
 
+      /// <summary>
+      ///
+      /// </summary>
+      void* handle = nullptr;
+
+      /// <summary>
+      ///
+      /// </summary>
+      uint32_t width = 0;
+
+      /// <summary>
+      ///
+      /// </summary>
+      uint32_t height = 0;
+
+      /// <summary>
+      ///
+      /// </summary>
+      uint64_t size = 0;
+
+      /// <summary>
+      ///
+      /// </summary>
+      uint64_t modifier = 0;
     } texture;
   };
 
@@ -105,10 +221,12 @@ public:
   /// <summary>
   ///
   /// </summary>
-  /// <param name="painter"></param>
-  virtual void render(void* painter) = 0;
+  virtual void render() = 0;
 };
 
-using CefViewRendererPtr = std::shared_ptr<ICefViewRenderer>;
+/// <summary>
+///
+/// </summary>
+using CefViewRendererPtr = QSharedPointer<ICefViewRenderer>;
 
 #endif

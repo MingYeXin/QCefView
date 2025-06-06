@@ -1,10 +1,10 @@
 include(FetchContent)
 
-# if(NOT CEFVIEW_CORE_VERSION)
-#     set(DEFAULT_CEFVIEW_CORE_VERSION "ca9f2c009a6a248a13ff0a2e33bbf46e7a044581")
-#     set(CEFVIEW_CORE_VERSION ${DEFAULT_CEFVIEW_CORE_VERSION})
-#     message(STATUS "CEFVIEW_CORE_VERSION not set, use default value:${CEFVIEW_CORE_VERSION}")
-# endif()
+if(NOT CEFVIEW_CORE_VERSION)
+    set(DEFAULT_CEFVIEW_CORE_VERSION "8b618d4290c9187eedfb8b176aae8a7dfcaa51ab")
+    set(CEFVIEW_CORE_VERSION ${DEFAULT_CEFVIEW_CORE_VERSION})
+    message(STATUS "CEFVIEW_CORE_VERSION not set, use default value:${CEFVIEW_CORE_VERSION}")
+endif()
 
 # fetch CefViewCore project
 FetchContent_Declare(
@@ -55,6 +55,7 @@ FetchContent_Declare(
 # set(CEF_SDK_VERSION "127.3.5+g114ea2a+chromium-127.0.6533.120")   # GOOD
 
 # set(CEF_SDK_VERSION "128.4.9+g9840ad9+chromium-128.0.6613.120")   # BAD   # debugbreak - debug mode
+# set(CEF_SDK_VERSION "136.1.6+g1ac1b14+chromium-136.0.7103.114")
 
 if(WIN32)
   set(CEF_SDK_VERSION "109.1.18+gf1c41e4+chromium-109.0.5414.120")  # GOOD

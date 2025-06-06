@@ -16,7 +16,7 @@
 #include <QScopedPointer>
 #include <QString>
 #include <QVariant>
-#pragma endregion 
+#pragma endregion
 
 class QCefConfigPrivate;
 
@@ -88,7 +88,7 @@ public:
   void addCommandLineSwitch(const QString& smitch);
 
   /// <summary>
-  /// Adds a switch with value to the commandline args used to initialize the CEF
+  /// Adds a switch with value to the command line args used to initialize the CEF
   /// </summary>
   /// <param name="smitch">The swtich name</param>
   /// <param name="v">The switch value</param>
@@ -104,9 +104,45 @@ public:
   /// Gets the OSR mode flag
   /// </summary>
   /// <returns>The flag indicates the enable/disable of OSR mode</returns>
-  const QVariant WindowlessRenderingEnabled() const;
+  const QVariant windowlessRenderingEnabled() const;
 
-#if !defined(Q_OS_MACOS)
+  /// <summary>
+  /// Sets the flag to enable/disable standalone message loop thread for CEF main thread
+  /// </summary>
+  /// <param name="enabled">True to use standalone thread, false to disable</param>
+  void setStandaloneMessageLoopEnabled(const bool enabled);
+
+  /// <summary>
+  /// Gets the standalone message loop flag
+  /// </summary>
+  /// <returns>The flag indicates the enable/disable status of standalone message loop thread</returns>
+  const QVariant standaloneMessageLoopEnabled() const;
+
+  /// <summary>
+  /// Sets the flag to enable/disable sandbox
+  /// </summary>
+  /// <param name="disabled">True to enable sandbox, false to disable</param>
+  void setSandboxDisabled(const bool disabled);
+
+  /// <summary>
+  /// Gets the flag of sandbox status.
+  /// </summary>
+  /// <returns>The flag indicates the enable/disable of sandbox</returns>
+  const QVariant sandboxDisabled() const;
+
+  /// <summary>
+  /// Sets the flag to disable the command line pass through
+  /// </summary>
+  /// <param name="disabled">True to disable the command line pass through, false to enable</param>
+  void setCommandLinePassthroughDisabled(const bool disabled);
+
+  /// <summary>
+  /// Gets the flag of disable command line pass through
+  /// </summary>
+  /// <returns>The flag indicates the enable/disable of OSR mode</returns>
+  const QVariant commandLinePassthroughDisabled() const;
+
+#if defined(Q_OS_WINDOWS) || defined(Q_OS_LINUX)
   /// <summary>
   /// Sets the browser subprocess path
   /// </summary>
@@ -188,31 +224,35 @@ public:
   /// </summary>
   const QString cachePath() const;
 
-#if CEF_VERSION_MAJOR < 115
   /// <summary>
   /// Sets the user data directory path
   /// </summary>
   /// <param name="path">The user data directory path</param>
+  /// @deprecated Deprecated since CEF 115.0.0
+  DEPRECATED_SINCE_CEF_VERSION(115, 0, 0)
   void setUserDataPath(const QString& path);
 
   /// <summary>
   /// Gets the user data directory path
   /// </summary>
+  /// @deprecated Deprecated since CEF 115.0.0
+  DEPRECATED_SINCE_CEF_VERSION(115, 0, 0)
   const QString userDataPath() const;
-
-#else
-
-  /// <summary>
-  /// Gets the root cache directory path
-  /// </summary>
-  const QString rootCachePath() const;
 
   /// <summary>
   /// Sets the root cache directory path
   /// </summary>
   /// <param name="path">The root cache directory path</param>
+  /// @since Introduced since CEF 115.0.0
+  INTRODUCED_SINCE_CEF_VERSION(115, 0, 0)
   void setRootCachePath(const QString& path);
-#endif
+
+  /// <summary>
+  /// Gets the root cache directory path
+  /// </summary>
+  /// @since Introduced since CEF 115.0.0
+  INTRODUCED_SINCE_CEF_VERSION(115, 0, 0)
+  const QString rootCachePath() const;
 
   /// <summary>
   /// Sets the bridge object name
@@ -285,18 +325,20 @@ public:
   /// </summary>
   const QVariant persistSessionCookies() const;
 
-#if CEF_VERSION_MAJOR < 128
   /// <summary>
   /// Sets whether to persist user preferences
   /// </summary>
   /// <param name="enabled">True if to persist user preferences</param>
+  /// @deprecated Deprecated since CEF 128.0.0
+  DEPRECATED_SINCE_CEF_VERSION(128, 0, 0)
   void setPersistUserPreferences(bool enabled);
 
   /// <summary>
   /// Gets whether to persist user preferences
   /// </summary>
+  /// @deprecated Deprecated since CEF 128.0.0
+  DEPRECATED_SINCE_CEF_VERSION(128, 0, 0)
   const QVariant persistUserPreferences() const;
-#endif
 
   /// <summary>
   /// Sets the remote debugging port

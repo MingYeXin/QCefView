@@ -6,6 +6,20 @@
 
 #include "MainWindow.h"
 
+#ifdef Q_OS_WINDOWS
+#if defined(ENABLE_GPU_OPTIMUS) && ENABLE_GPU_OPTIMUS
+#include <windows.h>
+extern "C"
+{
+  // http://developer.download.nvidia.com/devzone/devcenter/gamegraphics/files/OptimusRenderingPolicies.pdf
+  __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+
+  // https://gpuopen.com/learn/amdpowerxpressrequesthighperformance
+  _declspec(dllexport) DWORD AmdPowerXpressRequestHighPerformance = 0x00000001;
+}
+#endif
+#endif
+
 int
 main(int argc, char* argv[])
 {
@@ -26,7 +40,7 @@ main(int argc, char* argv[])
   // build QCefConfig
   QCefConfig config;
   // set user agent
-  config.setUserAgent("QCefViewTest");
+  // config.setUserAgent("QCefViewTest");
   // set log level
   config.setLogLevel(QCefConfig::LOGSEVERITY_DEFAULT);
   // set JSBridge object name (default value is CefViewClient)
@@ -39,9 +53,15 @@ main(int argc, char* argv[])
   // (QCefSetting.setBackgroundColor will overwrite this value for specified browser instance)
   // config.setBackgroundColor(Qt::lightGray);
 
-  // WindowlessRenderingEnabled is set to true by default,
+  // windowlessRenderingEnabled is set to true by default,
   // set to false to disable the OSR mode
   config.setWindowlessRenderingEnabled(true);
+  config.setStandaloneMessageLoopEnabled(true);
+
+  // disable sandbox
+  // this is a bit complicated, please refer to:
+  // https://developer.apple.com/documentation/xcode/configuring-the-macos-app-sandbox
+  config.setSandboxDisabled(true);
 
   // add command line args, you can any cef supported switches or parameters
   config.addCommandLineSwitch("use-mock-keychain");

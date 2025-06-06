@@ -4,15 +4,15 @@
 #include <list>
 #include <string>
 #include <unordered_map>
-#pragma endregion 
+#pragma endregion
 
 #pragma region cef_headers
 #include <include/cef_app.h>
-#pragma endregion 
+#pragma endregion
 
 #pragma region qt_headers
 #include <QVariant>
-#pragma endregion 
+#pragma endregion
 
 #include <QCefConfig.h>
 
@@ -42,7 +42,7 @@ public:
   std::string builtinSchemeName_;
   std::string acceptLanguageList_;
 
-#if !defined(Q_OS_MACOS)
+#if defined(Q_OS_WINDOWS) || defined(Q_OS_LINUX)
   std::string localesDirectoryPath_;
   std::string browserSubProcessPath_;
   std::string resourceDirectoryPath_;
@@ -50,15 +50,66 @@ public:
 
   int logLevel_ = LOGSEVERITY_DEFAULT;
 
-  // Enable OSR mode by default
-  /* bool   */ QVariant windowlessRenderingEnabled_ = true;
+  /// <summary>
+  /// /* bool   */
+  /// Enable OSR mode by default
+  /// </summary>
+  QVariant windowlessRenderingEnabled_ = true;
 
-  /* bool   */ QVariant persistSessionCookies_;
-#if CEF_VERSION_MAJOR < 128
-  /* bool   */ QVariant persistUserPreferences_;
+  /// <summary>
+  /// /* bool   */
+  /// Enable standalone message loop (bool)
+  /// </summary>
+#if defined(Q_OS_MACOS)
+  QVariant standaloneMessgeLoopEnabled_ = false;
+#else
+  QVariant standaloneMessgeLoopEnabled_ = true;
 #endif
-  /* short  */ QVariant remoteDebuggingport_;
-  /* QColor */ QVariant backgroundColor_;
 
+  /// <summary>
+  /// /* bool   */
+  /// Disable sandbox (enabled by default) (bool)
+  /// </summary>
+#if defined(CEF_USE_SANDBOX)
+  QVariant sandboxDisabled_ = false;
+#else
+  QVariant sandboxDisabled_ = true;
+#endif
+
+  /// <summary>
+  /// /* bool   */
+  /// Disable command line pass through (enabled by default) (bool)
+  /// </summary>
+  QVariant commandLinePassthroughDisabled_ = false;
+
+  /// <summary>
+  /// /* bool   */
+  ///
+  /// </summary>
+  QVariant persistSessionCookies_;
+
+#if CEF_VERSION_MAJOR < 128
+  /// <summary>
+  /// /* bool   */
+  ///
+  /// </summary>
+  QVariant persistUserPreferences_;
+#endif
+
+  /// <summary>
+  /// /* int   */
+  ///
+  /// </summary>
+  QVariant remoteDebuggingport_;
+
+  /// <summary>
+  /// /* QColor   */
+  ///
+  /// </summary>
+  QVariant backgroundColor_;
+
+  /// <summary>
+  ///
+  /// </summary>
   ArgsMap commandLineArgs_;
 };
