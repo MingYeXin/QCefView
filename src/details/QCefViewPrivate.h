@@ -102,12 +102,12 @@ public:
     /// <summary>
     ///
     /// </summary>
-    QCefWindow* qBrowserWindow_ = nullptr;
+    QPointer<QCefWindow> qBrowserWindow_ = nullptr;
 
     /// <summary>
     ///
     /// </summary>
-    QWidget* qBrowserWidget_ = nullptr;
+    QPointer<QWidget> qBrowserWidget_ = nullptr;
   } ncw;
 
   /// <summary>

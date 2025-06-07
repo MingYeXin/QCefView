@@ -247,16 +247,18 @@ QCefViewPrivate::createCefBrowser(const QString& url, const QCefSettingPrivate* 
     qDebug() << "Browser init size:" << windowInitialSize;
 
     ncw.qBrowserWindow_ = new QCefWindow();
-    ncw.qBrowserWindow_->resize(windowInitialSize);
-    ncw.qBrowserWindow_->setFlags(Qt::Window | Qt::FramelessWindowHint);
+    if (ncw.qBrowserWindow_) {
+      ncw.qBrowserWindow_->resize(windowInitialSize);
+      ncw.qBrowserWindow_->setFlags(Qt::Window | Qt::FramelessWindowHint);
 
-    auto width = windowInitialSize.width() * scaleFactor();
-    auto height = windowInitialSize.height() * scaleFactor();
+      auto width = windowInitialSize.width() * scaleFactor();
+      auto height = windowInitialSize.height() * scaleFactor();
 #if CEF_VERSION_MAJOR > 85
-    windowInfo.SetAsChild((CefWindowHandle)ncw.qBrowserWindow_->winId(), { 0, 0, (int)width, (int)height });
+      windowInfo.SetAsChild((CefWindowHandle)ncw.qBrowserWindow_->winId(), { 0, 0, (int)width, (int)height });
 #else
-    windowInfo.SetAsChild((CefWindowHandle)ncw.qBrowserWindow_->winId(), 0, 0, (int)width, (int)height);
+      windowInfo.SetAsChild((CefWindowHandle)ncw.qBrowserWindow_->winId(), 0, 0, (int)width, (int)height);
 #endif
+    }
   }
 
   // 5. create browser object
@@ -292,20 +294,24 @@ QCefViewPrivate::destroyCefBrowser()
 
   clearJSDialogMap();
 
-  if (!pClient_) {
-    return;
-  }
-
   if (!isOSRModeEnabled_) {
     // remove from parent, prevent from being destroyed
-    ncw.qBrowserWidget_->setParent(nullptr);
-    ncw.qBrowserWidget_->deleteLater();
-    ncw.qBrowserWindow_->detachCefWindow();
+    if (ncw.qBrowserWidget_) {
+      ncw.qBrowserWidget_->setParent(nullptr);
+    }
+    if (ncw.qBrowserWidget_) {
+      ncw.qBrowserWidget_->deleteLater();
+    }
+    if (ncw.qBrowserWindow_) {
+      ncw.qBrowserWindow_->detachCefWindow();
+    }
   }
 
   // clean all browsers
-  pClient_->CloseAllBrowsers();
-  pClient_ = nullptr;
+  if (pClient_) {
+    pClient_->CloseAllBrowsers();
+    pClient_ = nullptr;
+  }
   pCefBrowser_ = nullptr;
 }
 
@@ -386,7 +392,9 @@ QCefViewPrivate::onCefBrowserCreated(CefRefPtr<CefBrowser> browser, QWindow* win
     qDebug() << "CEF Window Native ID:" << window->winId();
 
     // create widget for cef window
-    ncw.qBrowserWidget_ = ncw.qBrowserWindow_->attachCefWindow(window, q_ptr);
+    if (ncw.qBrowserWindow_) {
+      ncw.qBrowserWidget_ = ncw.qBrowserWindow_->attachCefWindow(window, q_ptr);
+    }
     Q_ASSERT_X(                                                //
       ncw.qBrowserWidget_,                                     //
       "QCefViewPrivate::onCefBrowserCreated",                  //
@@ -423,16 +431,22 @@ QCefViewPrivate::onCefBrowserCreated(CefRefPtr<CefBrowser> browser, QWindow* win
 #endif // Q_OS_WIN
 
     // adjust size/mask and attach to cef window
-    ncw.qBrowserWindow_->applyMask(q_ptr->mask());
+    if (ncw.qBrowserWindow_) {
+      ncw.qBrowserWindow_->applyMask(q_ptr->mask());
+    }
 
     // resize to eliminate flicker
     qDebug() << "Host QCefView size:" << q_ptr->size();
-    ncw.qBrowserWidget_->resize(q_ptr->size());
+    if (ncw.qBrowserWidget_) {
+      ncw.qBrowserWidget_->resize(q_ptr->size());
+    }
 
     // initialize the layout and add browser widget to the layout
     QGridLayout* layout = new QGridLayout(q_ptr);
     layout->setContentsMargins(0, 0, 0, 0);
-    layout->addWidget(ncw.qBrowserWidget_);
+    if (ncw.qBrowserWidget_) {
+      layout->addWidget(ncw.qBrowserWidget_);
+    }
   }
 
 #if defined(QT_DEBUG)
