@@ -15,6 +15,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QPainter>
+#include <QRegion>
 #include <QStyleOption>
 #include <QWindow>
 #pragma endregion
@@ -397,31 +398,29 @@ QCefViewPrivate::onCefBrowserCreated(CefRefPtr<CefBrowser> browser, QWindow* win
       return;
     }
 
-    connect(ncw.qBrowserWindow_, &QCefWindow::sigResizeCefWindow,
-            window, [this, window](qint32 width, qint32 heigth) {
-      window->setProperty("newWidth", width);
-      window->setProperty("newHeight", heigth);
-      QTimer::singleShot(100, window, [this, window]() {
-        if (isMainFrameLoaded_) {
-          if (window) {
-              // resize window
-            qint32 width = window->property("newWidth").toInt();
-            qint32 height = window->property("newHeight").toInt();
 #ifdef Q_OS_WIN
-            ::SetWindowPos((HWND)(window->winId()),
+    connect(ncw.qBrowserWindow_, &QCefWindow::sigResizeCefWindow, window, [this, window](qint32 width, qint32 height) {
+      QPointer<QWindow> windowPointer = window;
+      if (windowPointer) {
+        windowPointer->setProperty("newWidth", width);
+        windowPointer->setProperty("newHeight", height);
+        QTimer::singleShot(100, windowPointer, [this, windowPointer]() {
+          if (windowPointer && isMainFrameLoaded_) {
+            // resize window
+            qint32 width = windowPointer->property("newWidth").toInt();
+            qint32 height = windowPointer->property("newHeight").toInt();
+            ::SetWindowPos((HWND)(windowPointer->winId()),
                            NULL,
                            0,
                            0,
                            width,
                            height,
                            SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSENDCHANGING | SWP_DEFERERASE);
-#else
-            window->resize(width, height);
-#endif // Q_OS_WIN
           }
-        }
-      });
+        });
+      }
     });
+#endif // Q_OS_WIN
 
     // adjust size/mask and attach to cef window
     ncw.qBrowserWindow_->applyMask(q_ptr->mask());
@@ -436,7 +435,6 @@ QCefViewPrivate::onCefBrowserCreated(CefRefPtr<CefBrowser> browser, QWindow* win
     layout->addWidget(ncw.qBrowserWidget_);
   }
 
-  emit q_ptr->sigCefBrowserCreated();
 #if defined(QT_DEBUG)
   //  monitor the focus changed event globally
   connect(qApp,                        //
@@ -448,6 +446,8 @@ QCefViewPrivate::onCefBrowserCreated(CefRefPtr<CefBrowser> browser, QWindow* win
                      << now << "[" << (now ? now->window()->windowHandle() : 0x00) << "]";
           });
 #endif
+
+  emit q_ptr->sigCefBrowserCreated();
 }
 
 bool
@@ -736,7 +736,17 @@ QCefViewPrivate::onStartDragging(CefRefPtr<CefDragData>& dragData, CefRenderHand
       int h = 0;
       if (auto pngData = image->GetAsPNG(1.0, true, w, h)) {
         QPixmap pixmap;
+#if CEF_VERSION_MAJOR > 109
         pixmap.loadFromData((const uchar*)(pngData->GetRawData()), (int)(pngData->GetSize()));
+#else
+        size_t pngDataSize = pngData->GetSize();
+        if (pngDataSize > 0) {
+          const uchar* buffer = new uchar[pngDataSize];
+          pngData->GetData((void*)buffer, pngDataSize, 0);
+          pixmap.loadFromData(buffer, (int)(pngDataSize));
+          delete []buffer;
+        }
+#endif
         pixmap.setDevicePixelRatio(scaleFactor());
         drag.setPixmap(pixmap);
       }
@@ -1194,7 +1204,10 @@ QCefViewPrivate::onViewSizeChanged(const QSize& size, const QSize& oldSize)
     }
   } else {
     if (ncw.qBrowserWindow_) {
-      ncw.qBrowserWindow_->applyMask(q->mask());
+      QRegion q_ptrRegion = q->mask();
+      QRect q_ptrRegionRect = q_ptrRegion.boundingRect();
+      QRegion qBrowserWindowRegion = QRegion(q_ptrRegionRect.x(), q_ptrRegionRect.y(), size.width(), size.height());
+      ncw.qBrowserWindow_->applyMask(qBrowserWindowRegion);
     }
   }
 }
