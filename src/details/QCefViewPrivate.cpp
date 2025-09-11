@@ -449,17 +449,17 @@ QCefViewPrivate::onCefBrowserCreated(CefRefPtr<CefBrowser> browser, QWindow* win
     }
   }
 
-#if defined(QT_DEBUG)
-  //  monitor the focus changed event globally
-  connect(qApp,                        //
-          &QApplication::focusChanged, //
-          [](QWidget* old, QWidget* now) {
-            qDebug() << "Focus changed from:"                                            //
-                     << old << "[" << (old ? old->window()->windowHandle() : 0x0) << "]" //
-                     << "->"                                                             //
-                     << now << "[" << (now ? now->window()->windowHandle() : 0x00) << "]";
-          });
-#endif
+//#if defined(QT_DEBUG)
+//  //  monitor the focus changed event globally
+//  connect(qApp,                        //
+//          &QApplication::focusChanged, //
+//          [](QWidget* old, QWidget* now) {
+//            qDebug() << "Focus changed from:"                                            //
+//                     << old << "[" << (old ? old->window()->windowHandle() : 0x0) << "]" //
+//                     << "->"                                                             //
+//                     << now << "[" << (now ? now->window()->windowHandle() : 0x00) << "]";
+//          });
+//#endif
 
   emit q_ptr->sigCefBrowserCreated();
 }
@@ -657,7 +657,7 @@ QCefViewPrivate::onCefWindowLostTabFocus(bool next)
 void
 QCefViewPrivate::onCefWindowGotFocus()
 {
-  qDebug() << "----- QCefViewPrivate::onCefWindowGotFocus()";
+  //qDebug() << "----- QCefViewPrivate::onCefWindowGotFocus()";
   Q_Q(QCefView);
 
   if (isOSRModeEnabled_) {
@@ -1033,13 +1033,13 @@ QCefViewPrivate::eventFilter(QObject* watched, QEvent* event)
     } break;
     case QEvent::FocusIn: {
       if (!isOSRModeEnabled_ && watched == ncw.qBrowserWindow_) {
-        qDebug() << "----- event to ncw.qBrowserWindow_:" << event;
+        //qDebug() << "----- event to ncw.qBrowserWindow_:" << event;
         q->focusInEvent(static_cast<QFocusEvent*>(event));
       }
     } break;
     case QEvent::FocusOut: {
       if (!isOSRModeEnabled_ && watched == ncw.qBrowserWindow_) {
-        qDebug() << "----- event to ncw.qBrowserWindow_:" << event;
+        //qDebug() << "----- event to ncw.qBrowserWindow_:" << event;
         q->focusOutEvent(static_cast<QFocusEvent*>(event));
       }
     } break;
@@ -1294,7 +1294,7 @@ QCefViewPrivate::onViewMouseEvent(QMouseEvent* event)
       return;
     }
 
-    // qDebug() << "====== onViewMouseEvent:" << event;
+    //qDebug() << "====== onViewMouseEvent:" << event;
 
     CefBrowserHost::MouseButtonType mbt = MBT_LEFT;
     switch (event->button()) {

@@ -125,7 +125,7 @@ QCefWindow::syncCefWindowPosOnResize()
 void
 QCefWindow::exposeEvent(QExposeEvent* e)
 {
-  qDebug() << "----- QCefWindow::exposeEvent:" << e;
+  //qDebug() << "----- QCefWindow::exposeEvent:" << e;
 #if defined(Q_OS_WINDOWS)
   syncCefWindowPosOnExpose();
 #endif
@@ -135,7 +135,7 @@ QCefWindow::exposeEvent(QExposeEvent* e)
 void
 QCefWindow::resizeEvent(QResizeEvent* e)
 {
-  qDebug() << "----- QCefWindow::resizeEvent:" << e;
+  //qDebug() << "----- QCefWindow::resizeEvent:" << e;
 #if defined(Q_OS_WINDOWS)
   syncCefWindowPosOnResize();
 #elif defined(Q_OS_LINUX)
@@ -151,14 +151,14 @@ QCefWindow::resizeEvent(QResizeEvent* e)
 void
 QCefWindow::focusInEvent(QFocusEvent* e)
 {
-  qDebug() << "----- QCefWindow::focusInEvent:" << e;
+  //qDebug() << "----- QCefWindow::focusInEvent:" << e;
   QWindow::focusInEvent(e);
 }
 
 void
 QCefWindow::focusOutEvent(QFocusEvent* e)
 {
-  qDebug() << "----- QCefWindow::focusOutEvent:" << e;
+  //qDebug() << "----- QCefWindow::focusOutEvent:" << e;
   QWindow::focusOutEvent(e);
 }
 
@@ -171,6 +171,6 @@ QCefWindow::focusObject() const
   } else {
     focusObject = QWindow::focusObject();
   }
-  qDebug() << "----- QCefWindow::focusObject:" << focusObject;
+  //qDebug() << "----- QCefWindow::focusObject:" << focusObject;
   return focusObject;
 }
