@@ -10,107 +10,120 @@ CCefClientDelegate::loadingStateChanged(CefRefPtr<CefBrowser>& browser,
                                         bool canGoBack,
                                         bool canGoForward)
 {
-  if (!IsValidBrowser(browser)) {
+#if 0
+  AcquireAndValidateCefViewPrivate(pCefViewPrivate);
+#else
+  auto pCefViewPrivate = pCefViewPrivate_.lock();
+  if (!pCefViewPrivate || !pCefViewPrivate->pCefBrowser_ || !browser->IsSame(pCefViewPrivate->pCefBrowser_)) {
     bool pCefViewPrivateIsNull = true;
-    if (pCefViewPrivate_) {
+    if (pCefViewPrivate) {
       pCefViewPrivateIsNull = false;
     }
     bool CefBrowserIsNull = true;
-    if (!pCefViewPrivateIsNull && pCefViewPrivate_->pCefBrowser_) {
+    if (!pCefViewPrivateIsNull && pCefViewPrivate->pCefBrowser_) {
       CefBrowserIsNull = false;
     }
     bool browserIsSame = false;
     if (!pCefViewPrivateIsNull && !CefBrowserIsNull) {
-      browserIsSame = browser->IsSame(pCefViewPrivate_->pCefBrowser_);
+      browserIsSame = browser->IsSame(pCefViewPrivate->pCefBrowser_);
     }
     qDebug() << "CCefClientDelegate::loadingStateChanged"
              << QString("pCefViewPrivate_(%1), pCefViewPrivate_->pCefBrowser_(%2), browser->IsSame(%3)")
                   .arg(pCefViewPrivateIsNull)
                   .arg(CefBrowserIsNull)
                   .arg(browserIsSame);
-    if (pCefViewPrivate_) {
-      emit pCefViewPrivate_->q_ptr->loadingStateChangedBeforeCefBrowserCreate();
+    if (pCefViewPrivate && pCefViewPrivate->q_ptr) {
+      emit pCefViewPrivate->q_ptr->loadingStateChangedBeforeCefBrowserCreate();
     }
     return;
   }
+#endif
 
-  emit pCefViewPrivate_->q_ptr->loadingStateChanged(browser->GetIdentifier(), isLoading, canGoBack, canGoForward);
+  runInMainThread([=]() {
+    if (pCefViewPrivate->q_ptr) {
+      emit pCefViewPrivate->q_ptr->loadingStateChanged(browser->GetIdentifier(), isLoading, canGoBack, canGoForward);
+    }
+  });
 }
 
 void
 CCefClientDelegate::loadStart(CefRefPtr<CefBrowser>& browser, CefRefPtr<CefFrame>& frame, int transitionType)
 {
-  if (!IsValidBrowser(browser)) {
+#if 0
+  AcquireAndValidateCefViewPrivate(pCefViewPrivate);
+#else
+  auto pCefViewPrivate = pCefViewPrivate_.lock();
+  if (!pCefViewPrivate || !pCefViewPrivate->pCefBrowser_ || !browser->IsSame(pCefViewPrivate->pCefBrowser_)) {
     bool pCefViewPrivateIsNull = true;
-    if (pCefViewPrivate_) {
+    if (pCefViewPrivate) {
       pCefViewPrivateIsNull = false;
     }
     bool CefBrowserIsNull = true;
-    if (!pCefViewPrivateIsNull && pCefViewPrivate_->pCefBrowser_) {
+    if (!pCefViewPrivateIsNull && pCefViewPrivate->pCefBrowser_) {
       CefBrowserIsNull = false;
     }
     bool browserIsSame = false;
     if (!pCefViewPrivateIsNull && !CefBrowserIsNull) {
-      browserIsSame = browser->IsSame(pCefViewPrivate_->pCefBrowser_);
+      browserIsSame = browser->IsSame(pCefViewPrivate->pCefBrowser_);
     }
     qDebug() << "CCefClientDelegate::loadStart"
              << QString("pCefViewPrivate_(%1), pCefViewPrivate_->pCefBrowser_(%2), browser->IsSame(%3)")
                   .arg(pCefViewPrivateIsNull)
                   .arg(CefBrowserIsNull)
                   .arg(browserIsSame);
-    if (pCefViewPrivate_) {
-      emit pCefViewPrivate_->q_ptr->loadStartBeforeCefBrowserCreate();
+    if (pCefViewPrivate && pCefViewPrivate->q_ptr) {
+      emit pCefViewPrivate->q_ptr->loadStartBeforeCefBrowserCreate();
     }
     return;
   }
+#endif
 
-  emit pCefViewPrivate_->q_ptr->loadStart(
-    browser->GetIdentifier(), ValueConvertor::FrameIdC2Q(frame->GetIdentifier()), frame->IsMain(), transitionType);
+  runInMainThread([=]() {
+    if (pCefViewPrivate->q_ptr) {
+      emit pCefViewPrivate->q_ptr->loadStart(
+        browser->GetIdentifier(), ValueConvertor::FrameIdC2Q(frame->GetIdentifier()), frame->IsMain(), transitionType);
+    }
+  });
 }
 
 void
 CCefClientDelegate::loadEnd(CefRefPtr<CefBrowser>& browser, CefRefPtr<CefFrame>& frame, int httpStatusCode)
 {
-  if (!IsValidBrowser(browser)) {
+#if 0
+  AcquireAndValidateCefViewPrivate(pCefViewPrivate);
+#else
+  auto pCefViewPrivate = pCefViewPrivate_.lock();
+  if (!pCefViewPrivate || !pCefViewPrivate->pCefBrowser_ || !browser->IsSame(pCefViewPrivate->pCefBrowser_)) {
     bool pCefViewPrivateIsNull = true;
-    if (pCefViewPrivate_) {
+    if (pCefViewPrivate) {
       pCefViewPrivateIsNull = false;
     }
     bool CefBrowserIsNull = true;
-    if (!pCefViewPrivateIsNull && pCefViewPrivate_->pCefBrowser_) {
+    if (!pCefViewPrivateIsNull && pCefViewPrivate->pCefBrowser_) {
       CefBrowserIsNull = false;
     }
     bool browserIsSame = false;
     if (!pCefViewPrivateIsNull && !CefBrowserIsNull) {
-      browserIsSame = browser->IsSame(pCefViewPrivate_->pCefBrowser_);
+      browserIsSame = browser->IsSame(pCefViewPrivate->pCefBrowser_);
     }
     qDebug() << "CCefClientDelegate::loadEnd"
              << QString("pCefViewPrivate_(%1), pCefViewPrivate_->pCefBrowser_(%2), browser->IsSame(%3)")
                   .arg(pCefViewPrivateIsNull)
                   .arg(CefBrowserIsNull)
                   .arg(browserIsSame);
-    if (pCefViewPrivate_) {
-      emit pCefViewPrivate_->q_ptr->loadEndBeforeCefBrowserCreate();
+    if (pCefViewPrivate && pCefViewPrivate->q_ptr) {
+      emit pCefViewPrivate->q_ptr->loadEndBeforeCefBrowserCreate();
     }
     return;
   }
+#endif
 
-  // workaround for:
-  // https://github.com/chromiumembedded/cef/issues/3870
-  // after navigation CEF resets the browser focus status
-  // without any callback notification (AKA, released the
-  // focus silently), so we need to update the CEF browser
-  // focus status according to the one we have kept
-  if (true                                   //
-      && pCefViewPrivate_->isOSRModeEnabled_ //
-      && pCefViewPrivate_->q_ptr->hasFocus() //
-      && browser->GetHost()                  //
-  ) {
-    browser->GetHost()->SetFocus(true);
-  }
-
-  emit pCefViewPrivate_->q_ptr->loadEnd(
-    browser->GetIdentifier(), ValueConvertor::FrameIdC2Q(frame->GetIdentifier()), frame->IsMain(), httpStatusCode);
+  runInMainThread([=]() {
+    if (pCefViewPrivate->q_ptr) {
+      emit pCefViewPrivate->q_ptr->loadEnd(
+        browser->GetIdentifier(), ValueConvertor::FrameIdC2Q(frame->GetIdentifier()), frame->IsMain(), httpStatusCode);
+    }
+  });
 }
 
 void
@@ -121,29 +134,38 @@ CCefClientDelegate::loadError(CefRefPtr<CefBrowser>& browser,
                               const CefString& failedUrl,
                               bool& handled)
 {
-  if (!IsValidBrowser(browser)) {
+#if 0
+  AcquireAndValidateCefViewPrivate(pCefViewPrivate);
+#else
+  auto pCefViewPrivate = pCefViewPrivate_.lock();
+  if (!pCefViewPrivate || !pCefViewPrivate->pCefBrowser_ || !browser->IsSame(pCefViewPrivate->pCefBrowser_)) {
     bool pCefViewPrivateIsNull = true;
-    if (pCefViewPrivate_) {
+    if (pCefViewPrivate) {
       pCefViewPrivateIsNull = false;
     }
     bool CefBrowserIsNull = true;
-    if (!pCefViewPrivateIsNull && pCefViewPrivate_->pCefBrowser_) {
+    if (!pCefViewPrivateIsNull && pCefViewPrivate->pCefBrowser_) {
       CefBrowserIsNull = false;
     }
     bool browserIsSame = false;
     if (!pCefViewPrivateIsNull && !CefBrowserIsNull) {
-      browserIsSame = browser->IsSame(pCefViewPrivate_->pCefBrowser_);
+      browserIsSame = browser->IsSame(pCefViewPrivate->pCefBrowser_);
     }
     qDebug() << "CCefClientDelegate::loadError"
              << QString("pCefViewPrivate_(%1), pCefViewPrivate_->pCefBrowser_(%2), browser->IsSame(%3)")
                   .arg(pCefViewPrivateIsNull)
                   .arg(CefBrowserIsNull)
                   .arg(browserIsSame);
-    if (pCefViewPrivate_) {
-      emit pCefViewPrivate_->q_ptr->loadErrorBeforeCefBrowserCreate();
+    if (pCefViewPrivate && pCefViewPrivate->q_ptr) {
+      emit pCefViewPrivate->q_ptr->loadErrorBeforeCefBrowserCreate();
     }
     return;
   }
+#endif
 
-  handled = pCefViewPrivate_->handleLoadError(browser, frame, errorCode, errorMsg, failedUrl);
+  runInMainThreadAndWait([&]() {
+    if (pCefViewPrivate->q_ptr) {
+      handled = pCefViewPrivate->handleLoadError(browser, frame, errorCode, errorMsg, failedUrl);
+    }
+  });
 }

@@ -45,14 +45,18 @@ void
 QCefWindow::detachCefWindow()
 {
   if (cefWindow_) {
-#if defined(Q_OS_MACOS)
-
-#else
-    cefWindow_->hide();
-#if defined(Q_OS_LINUX)
+#if defined(Q_OS_WINDOWS)
+    // hide window
+    ::ShowWindow((HWND)(cefWindow_->winId()), SW_HIDE);
     cefWindow_->setParent(nullptr);
+#elif defined(Q_OS_LINUX)
+    // hide window
+    cefWindow_->hide();
+    cefWindow_->setParent(nullptr);
+#else
+    // no action needed
 #endif
-#endif
+
     cefWindow_ = nullptr;
     cefWidget_ = nullptr;
   }
@@ -92,7 +96,19 @@ QCefWindow::syncCefWindowPosOnExpose()
     // qDebug() << "----- width:" << windowWidth << " x " << windowScaleFactor << " = " << width;
     // qDebug() << "----- height:" << windowHeight << " x " << windowScaleFactor << " = " << height;
 
+#if 0
+    HWND hWnd = (HWND)(cefWindow_->winId());
+
+    ::SetWindowPos(hWnd,
+                   NULL,
+                   0,
+                   0,
+                   width,
+                   height,
+                   SWP_ASYNCWINDOWPOS | SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_NOZORDER | SWP_DEFERERASE);
+#else
     emit sigResizeCefWindow(width, height);
+#endif
   }
 #endif
 }
@@ -117,7 +133,19 @@ QCefWindow::syncCefWindowPosOnResize()
     // qDebug() << "----- width:" << widgetWidth << " x " << widgetScaleFactor << " = " << width;
     // qDebug() << "----- height:" << widgetHeigth << " x " << widgetScaleFactor << " = " << height;
 
+#if 0
+    HWND hWnd = (HWND)(cefWindow_->winId());
+
+    ::SetWindowPos(hWnd,
+                   NULL,
+                   0,
+                   0,
+                   width,
+                   height,
+                   SWP_ASYNCWINDOWPOS | SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_NOZORDER | SWP_DEFERERASE);
+#else
     emit sigResizeCefWindow(width, height);
+#endif
   }
 #endif
 }

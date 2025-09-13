@@ -3,7 +3,6 @@
 #include <QMenu>
 #include <QMutex>
 #include <QPointer>
-#include <QScopedPointer>
 #include <QString>
 #include <QStringList>
 
@@ -25,11 +24,13 @@
 #include <QCefQuery.h>
 #include <QCefView.h>
 
-class QCefViewPrivate : public QObject
+class QCefViewPrivate
+  : public QObject
+  , public QEnableSharedFromThis<QCefViewPrivate>
 {
   Q_OBJECT
   Q_DECLARE_PUBLIC(QCefView)
-  QCefView* q_ptr;
+  QPointer<QCefView> q_ptr;
 
   friend class CCefClientDelegate;
 
@@ -85,6 +86,17 @@ public:
     // IME parameters
     QRect imeCursorRect_;
 
+    /// <summary>
+    /// workaround for:
+    /// https://github.com/chromiumembedded/cef/issues/3870
+    /// after navigation CEF resets the browser focus status
+    /// without any callback notification (AKA, released the
+    /// focus silently), so we need to keep the CEF browser
+    /// focus status by ourself, and at every loadEnd callback
+    /// we need to sync the status to CEF browser.
+    /// </summary>
+    bool hasCefGotFocus_ = false;
+
     // context menu status and parameters
     bool isShowingContextMenu_ = false;
     QMenu* contextMenu_ = nullptr;
@@ -120,7 +132,7 @@ public:
 #endif
 
 public:
-  explicit QCefViewPrivate(QCefContextPrivate* ctx, QCefView* view);
+  explicit QCefViewPrivate(QCefView* view, QCefContextPrivate* ctx, const QCefSettingPrivate* setting);
 
   ~QCefViewPrivate();
 
@@ -141,7 +153,7 @@ public:
 protected:
   void onCefBrowserCreated(CefRefPtr<CefBrowser> browser, QWindow* window);
 
-  bool onBeforeNewBrowserCreate(const QCefFrameId& sourceFrameId,
+  void onBeforeNewBrowserCreate(const QCefFrameId& sourceFrameId,
                                 const QString& targetUrl,
                                 const QString& targetFrameName,
                                 QCefView::CefWindowOpenDisposition targetDisposition,

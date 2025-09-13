@@ -20,6 +20,9 @@ CCefClientDelegate::onJSDialog(CefRefPtr<CefBrowser>& browser,
                                CefRefPtr<CefJSDialogCallback>& callback,
                                bool& suppress_message)
 {
+  suppress_message = true;
+  AcquireAndValidateCefViewPrivateWithReturn(pCefViewPrivate, false);
+
   /// Called to run a JavaScript dialog.
   ///
   /// If |origin_url| is non-empty it can be passed to the CefFormatUrlForSecurityDisplay
@@ -42,37 +45,48 @@ CCefClientDelegate::onJSDialog(CefRefPtr<CefBrowser>& browser,
   /// custom dialog is used the application must execute |callback| once the custom
   /// dialog is dismissed.
 
+  suppress_message = false;
+
   switch (dialog_type) {
     case CefJSDialogHandler::JSDialogType::JSDIALOGTYPE_ALERT: {
-      QMetaObject::invokeMethod(pCefViewPrivate_, [=]() {
-        QMessageBox msgBox;
+      runInMainThread( //
+        [=]() {
+          if (!pCefViewPrivate->q_ptr) {
+            return;
+          }
+
+          QMessageBox msgBox(pCefViewPrivate->q_ptr);
 #if 0
-        auto title = CefFormatUrlForSecurityDisplay(origin_url);
-        msgBox.setWindowTitle(title.ToString().c_str());
+          auto title = CefFormatUrlForSecurityDisplay(origin_url);
+          msgBox.setWindowTitle(title.ToString().c_str());
 #elif 0
-        std::string title = "Javascript Alert";
-        msgBox.setWindowTitle(title.c_str());
+          std::string title = "Javascript Alert";
+          inputDialog.setWindowTitle(title.c_str());
 #else
-        // 默认使用调用程序名称作为窗口标题
+         // 默认使用调用程序名称作为窗口标题
 #endif
-        msgBox.setText(message_text.ToString().c_str());
-        msgBox.setStandardButtons(QMessageBox::StandardButton::Ok);
+          msgBox.setText(message_text.ToString().c_str());
+          msgBox.setStandardButtons(QMessageBox::StandardButton::Ok);
 
-        // insert to the pending map
-        pendingJSDialogMap_[&msgBox] = QPointer<QDialog>(&msgBox);
-        msgBox.exec();
-        // remove from pending map
-        pendingJSDialogMap_.remove(&msgBox);
+          // insert to the pending map
+          pendingJSDialogMap_[&msgBox] = QPointer<QDialog>(&msgBox);
+          msgBox.exec();
+          // remove from pending map
+          pendingJSDialogMap_.remove(&msgBox);
 
-        if (callback) {
-          callback->Continue(true, "");
-        }
-      });
+          if (callback) {
+            callback->Continue(true, "");
+          }
+        });
       return true;
     } break;
     case CefJSDialogHandler::JSDialogType::JSDIALOGTYPE_CONFIRM: {
-      QMetaObject::invokeMethod(pCefViewPrivate_, [=]() {
-        QMessageBox msgBox;
+      runInMainThread([=]() {
+        if (!pCefViewPrivate->q_ptr) {
+          return;
+        }
+
+        QMessageBox msgBox(pCefViewPrivate->q_ptr);
 #if 0
         auto title = CefFormatUrlForSecurityDisplay(origin_url);
         msgBox.setWindowTitle(title.ToString().c_str());
@@ -99,8 +113,12 @@ CCefClientDelegate::onJSDialog(CefRefPtr<CefBrowser>& browser,
       return true;
     } break;
     case CefJSDialogHandler::JSDialogType::JSDIALOGTYPE_PROMPT: {
-      QMetaObject::invokeMethod(pCefViewPrivate_, [=]() {
-        QInputDialog inputDialog;
+      runInMainThread([=]() {
+        if (!pCefViewPrivate->q_ptr) {
+          return;
+        }
+
+        QInputDialog inputDialog(pCefViewPrivate->q_ptr);
 #if 0
         auto title = CefFormatUrlForSecurityDisplay(origin_url);
         inputDialog.setWindowTitle(title.ToString().c_str());
@@ -140,6 +158,8 @@ CCefClientDelegate::onBeforeUnloadDialog(CefRefPtr<CefBrowser>& browser,
                                          bool is_reload,
                                          CefRefPtr<CefJSDialogCallback>& callback)
 {
+  AcquireAndValidateCefViewPrivateWithReturn(pCefViewPrivate, true);
+
   /// Called to run a dialog asking the user if they want to leave a page.
   /// Return false to use the default dialog implementation. Return true if the
   /// application will use a custom dialog or if the callback has been executed
@@ -147,8 +167,12 @@ CCefClientDelegate::onBeforeUnloadDialog(CefRefPtr<CefBrowser>& browser,
   /// dialog is used the application must execute |callback| once the custom
   /// dialog is dismissed.
 
-  QMetaObject::invokeMethod(pCefViewPrivate_, [=]() {
-    QMessageBox msgBox(pCefViewPrivate_->q_func());
+  runInMainThread([=]() {
+    if (!pCefViewPrivate->q_ptr) {
+      return;
+    }
+
+    QMessageBox msgBox(pCefViewPrivate->q_ptr);
     msgBox.setIcon(QMessageBox::Question);
     msgBox.setText(message_text.ToString().c_str());
     msgBox.setStandardButtons(QMessageBox::StandardButton::Ok | QMessageBox::StandardButton::Cancel);
@@ -167,11 +191,13 @@ CCefClientDelegate::onBeforeUnloadDialog(CefRefPtr<CefBrowser>& browser,
 void
 CCefClientDelegate::onResetDialogState(CefRefPtr<CefBrowser>& browser)
 {
+  AcquireAndValidateCefViewPrivate(pCefViewPrivate);
+
   /// Called to cancel any pending dialogs and reset any saved dialog state.
   /// Will be called due to events like page navigation irregardless of whether
   /// any dialogs are currently pending.
 
-  QMetaObject::invokeMethod(pCefViewPrivate_, [=]() {
+  runInMainThread([=]() {
     for (auto dlg : pendingJSDialogMap_) {
       if (dlg) {
         dlg->reject();

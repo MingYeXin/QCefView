@@ -6,7 +6,7 @@
 #include "QCefViewPrivate.h"
 #include "utils/ValueConvertor.h"
 
-CCefClientDelegate::CCefClientDelegate(QCefViewPrivate* p)
+CCefClientDelegate::CCefClientDelegate(QSharedPointer<QCefViewPrivate> p)
   : pCefViewPrivate_(p)
 {
   pendingDownloadItemMap_.clear();
@@ -39,14 +39,17 @@ CCefClientDelegate::clearJSDialogMap()
 void
 CCefClientDelegate::processUrlRequest(CefRefPtr<CefBrowser>& browser, CefRefPtr<CefFrame>& frame, const CefString& url)
 {
-  if (!IsValidBrowser(browser))
-    return;
+  AcquireAndValidateCefViewPrivate(pCefViewPrivate);
 
-  auto browserId = browser->GetIdentifier();
+  auto b = browser->GetIdentifier();
+  auto f = ValueConvertor::FrameIdC2Q(frame->GetIdentifier());
   auto u = QString::fromStdString(url);
-  auto source = pCefViewPrivate_->q_ptr;
 
-  emit source->cefUrlRequest(browserId, ValueConvertor::FrameIdC2Q(frame->GetIdentifier()), u);
+  runInMainThread([pCefViewPrivate, b, f, u]() {
+    if (pCefViewPrivate->q_ptr) {
+      emit pCefViewPrivate->q_ptr->cefUrlRequest(b, f, u);
+    }
+  });
 }
 
 void
@@ -55,15 +58,18 @@ CCefClientDelegate::processQueryRequest(CefRefPtr<CefBrowser>& browser,
                                         const CefString& request,
                                         const int64_t query_id)
 {
-  if (!IsValidBrowser(browser))
-    return;
+  AcquireAndValidateCefViewPrivate(pCefViewPrivate);
 
-  auto browserId = browser->GetIdentifier();
-  auto req = QString::fromStdString(request);
-  auto source = pCefViewPrivate_->q_ptr;
-  auto query = pCefViewPrivate_->createQuery(req, query_id);
+  auto b = browser->GetIdentifier();
+  auto f = ValueConvertor::FrameIdC2Q(frame->GetIdentifier());
+  auto r = QString::fromStdString(request);
+  auto q = pCefViewPrivate->createQuery(r, query_id);
 
-  emit source->cefQueryRequest(browserId, ValueConvertor::FrameIdC2Q(frame->GetIdentifier()), query);
+  runInMainThread([pCefViewPrivate, b, f, q]() {
+    if (pCefViewPrivate->q_ptr) {
+      emit pCefViewPrivate->q_ptr->cefQueryRequest(b, f, q);
+    }
+  });
 }
 
 void
@@ -71,13 +77,12 @@ CCefClientDelegate::focusedEditableNodeChanged(CefRefPtr<CefBrowser>& browser,
                                                CefRefPtr<CefFrame>& frame,
                                                bool focusOnEditableNode)
 {
-  if (!IsValidBrowser(browser))
-    return;
+  AcquireAndValidateCefViewPrivate(pCefViewPrivate);
 
-  QMetaObject::invokeMethod(pCefViewPrivate_,                //
-                            "onCefInputStateChanged",        //
-                            Q_ARG(bool, focusOnEditableNode) //
-  );
+  runInMainThread(                             //
+    [pCefViewPrivate, focusOnEditableNode]() { //
+      pCefViewPrivate->onCefInputStateChanged(focusOnEditableNode);
+    });
 }
 
 void
@@ -86,10 +91,10 @@ CCefClientDelegate::invokeMethodNotify(CefRefPtr<CefBrowser>& browser,
                                        const CefString& method,
                                        const CefRefPtr<CefListValue>& arguments)
 {
-  if (!IsValidBrowser(browser))
-    return;
+  AcquireAndValidateCefViewPrivate(pCefViewPrivate);
 
-  auto m = QString::fromStdString(method);
+  auto b = browser->GetIdentifier();
+  auto f = ValueConvertor::FrameIdC2Q(frame->GetIdentifier());
   QVariantList args;
   for (int i = 0; i < arguments->GetSize(); i++) {
     QVariant qV;
@@ -97,9 +102,13 @@ CCefClientDelegate::invokeMethodNotify(CefRefPtr<CefBrowser>& browser,
     ValueConvertor::CefValueToQVariant(&qV, cV.get());
     args.push_back(qV);
   }
+  auto m = QString::fromStdString(method);
 
-  auto browserId = browser->GetIdentifier();
-  emit pCefViewPrivate_->q_ptr->invokeMethod(browserId, ValueConvertor::FrameIdC2Q(frame->GetIdentifier()), m, args);
+  runInMainThread([pCefViewPrivate, b, f, m, args]() {
+    if (pCefViewPrivate->q_ptr) {
+      emit pCefViewPrivate->q_ptr->invokeMethod(b, f, m, args);
+    }
+  });
 }
 
 void
@@ -108,13 +117,17 @@ CCefClientDelegate::reportJSResult(CefRefPtr<CefBrowser>& browser,
                                    const CefString& context,
                                    const CefRefPtr<CefValue>& result)
 {
-  if (!IsValidBrowser(browser))
-    return;
+  AcquireAndValidateCefViewPrivate(pCefViewPrivate);
 
-  auto browserId = browser->GetIdentifier();
+  auto b = browser->GetIdentifier();
+  auto f = ValueConvertor::FrameIdC2Q(frame->GetIdentifier());
   QVariant qV;
   ValueConvertor::CefValueToQVariant(&qV, result.get());
   auto c = QString::fromStdString(context);
-  emit pCefViewPrivate_->q_ptr->reportJavascriptResult(
-    browserId, ValueConvertor::FrameIdC2Q(frame->GetIdentifier()), c, qV);
+
+  runInMainThread([pCefViewPrivate, b, f, c, qV]() {
+    if (pCefViewPrivate->q_ptr) {
+      emit pCefViewPrivate->q_ptr->reportJavascriptResult(b, f, c, qV);
+    }
+  });
 }
