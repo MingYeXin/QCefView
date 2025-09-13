@@ -56,8 +56,15 @@ CCefClientDelegate::onJSDialog(CefRefPtr<CefBrowser>& browser,
           }
 
           QMessageBox msgBox(pCefViewPrivate->q_ptr);
+#if 0
           auto title = CefFormatUrlForSecurityDisplay(origin_url);
           msgBox.setWindowTitle(title.ToString().c_str());
+#elif 0
+          std::string title = "Javascript Alert";
+          inputDialog.setWindowTitle(title.c_str());
+#else
+         // 默认使用调用程序名称作为窗口标题
+#endif
           msgBox.setText(message_text.ToString().c_str());
           msgBox.setStandardButtons(QMessageBox::StandardButton::Ok);
 
@@ -78,6 +85,7 @@ CCefClientDelegate::onJSDialog(CefRefPtr<CefBrowser>& browser,
         }
 
         QMessageBox msgBox(pCefViewPrivate->q_ptr);
+#if 0
         auto title = CefFormatUrlForSecurityDisplay(origin_url);
         msgBox.setWindowTitle(title.ToString().c_str());
 #elif 0
@@ -109,6 +117,7 @@ CCefClientDelegate::onJSDialog(CefRefPtr<CefBrowser>& browser,
         }
 
         QInputDialog inputDialog(pCefViewPrivate->q_ptr);
+#if 0
         auto title = CefFormatUrlForSecurityDisplay(origin_url);
         inputDialog.setWindowTitle(title.ToString().c_str());
 #elif 0
