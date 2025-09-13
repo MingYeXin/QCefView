@@ -66,8 +66,9 @@ MainWindow::createLeftCefView()
 
   // Build settings for per QCefView
   QCefSetting setting;
+  setting.setOffScreenRenderingEnabled(true);
   setting.setHardwareAccelerationEnabled(false);
-  setting.setWindowlessFrameRate(120);
+  setting.setWindowlessFrameRate(60);
   setting.setBackgroundColor(Qt::cyan);
 
   m_pLeftCefViewWidget = new QCefView(LEFT_INDEX_URL, &setting, this);
@@ -110,8 +111,9 @@ MainWindow::createRightCefView()
 
   // Build settings for per QCefView
   QCefSetting setting;
+  setting.setOffScreenRenderingEnabled(true);
   setting.setHardwareAccelerationEnabled(true);
-  setting.setWindowlessFrameRate(120);
+  setting.setWindowlessFrameRate(60);
   QColor background(0, 255, 0, 255);
   setting.setBackgroundColor(background);
 

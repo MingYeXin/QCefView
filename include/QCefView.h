@@ -12,7 +12,7 @@
 #include <QCefView_global.h>
 
 #pragma region qt_headers
-#include <QScopedPointer>
+#include <QSharedPointer>
 #include <QVariantList>
 #include <QWidget>
 #include <QWindow>
@@ -50,7 +50,7 @@ class QCEFVIEW_EXPORT QCefView : public QWidget
   Q_OBJECT
   Q_DECLARE_PRIVATE(QCefView)
   Q_DISABLE_COPY(QCefView)
-  QScopedPointer<QCefViewPrivate> d_ptr;
+  QSharedPointer<QCefViewPrivate> d_ptr;
 
 public:
   /// <summary>
@@ -523,6 +523,12 @@ protected:
   /// Please refer to QWidget::paintEngine
   /// </summary>
   QPaintEngine* paintEngine() const override;
+
+  /// <summary>
+  /// Please refer to QWidget::paintEvent
+  /// </summary>
+  /// <param name="event"></param>
+  void paintEvent(QPaintEvent* event) override;
 
   /// <summary>
   ///

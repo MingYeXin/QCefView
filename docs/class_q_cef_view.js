@@ -40,6 +40,8 @@ var class_q_cef_view =
     [ "closeDevTools", "class_q_cef_view.html#abdf0a68139fe9163ecd9b5a0cdeed6d7", null ],
     [ "setAllowDrag", "class_q_cef_view.html#adde0e6deab46ce9dfef06c07af25f677", null ],
     [ "allowDrag", "class_q_cef_view.html#adf944b4ec19dc62e6703b35f62c8cdd5", null ],
+    [ "setZoomLevel", "class_q_cef_view.html#a497e1bc42d6283557f6a180b058ab3cf", null ],
+    [ "zoomLevel", "class_q_cef_view.html#aaf898d01d9a81f8bdae1897e7898ee48", null ],
     [ "loadingStateChanged", "class_q_cef_view.html#a076678fb5d8deec1600f369d4f1fc95a", null ],
     [ "loadStart", "class_q_cef_view.html#a6b04776ad4d7b62c102e9c38ac022b40", null ],
     [ "loadEnd", "class_q_cef_view.html#a567e20fd09518ca9c0d2e82f936ff5d6", null ],
@@ -62,9 +64,8 @@ var class_q_cef_view =
     [ "onNewDownloadItem", "class_q_cef_view.html#a666e93d6e9f9be7444f9b898f77c8292", null ],
     [ "onUpdateDownloadItem", "class_q_cef_view.html#a9833a1db8ef5864489f9462ef397cbb8", null ],
     [ "onRequestCloseFromWeb", "class_q_cef_view.html#ad23057b6187876c84f883b1e7120456d", null ],
-    [ "setFocus", "class_q_cef_view.html#a61ad737cd2354021f8310f323f4f8ada", null ],
     [ "inputMethodQuery", "class_q_cef_view.html#af25a011c126a9bb5dc3df99756a75368", null ],
-    [ "setFocus", "class_q_cef_view.html#a9b1b42857e38a9f5c6c810fd51593788", null ],
     [ "paintEngine", "class_q_cef_view.html#ad88e5a99ad808b7a911b58ba9ed9b838", null ],
+    [ "paintEvent", "class_q_cef_view.html#aa205502bb5238e6e2ce727046ed8a9b8", null ],
     [ "event", "class_q_cef_view.html#a2c33acd395e7f4adecbef1bf67b7680c", null ]
 ];

@@ -6,6 +6,8 @@
     <meta http-equiv="X-UA-Compatible" content="IE=9" />
     <meta name="generator" content="Doxygen 1.13.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="A QWidget-based WebView Component Integrated with CEF" />
+    <meta name="google-site-verification" content="ZrQwodBTb-yj0Q2Qw4-KxC8HN5x84J9tn1ZrY1zRFrU" />
     <title>QCefView: QCefView</title>
     <link href="tabs.css" rel="stylesheet" type="text/css" />
     <link rel="icon" type="image/svg+xml" href="logo.drawio.svg" />
@@ -24,35 +26,7 @@
         DoxygenAwesomeInteractiveToc.init()
         DoxygenAwesomeTabs.init()
     </script>
-    <link href="navtree.css" rel="stylesheet" type="text/css"/>
-<script type="text/javascript" src="navtreedata.js"></script>
-<script type="text/javascript" src="navtree.js"></script>
-<script type="text/javascript" src="resize.js"></script>
-<script type="text/javascript" src="cookie.js"></script>
-    <link href="search/search.css" rel="stylesheet" type="text/css"/>
-<script type="text/javascript" src="search/searchdata.js"></script>
-<script type="text/javascript" src="search/search.js"></script>
     <link href="doxygen.css" rel="stylesheet" type="text/css" />
-    <link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
-<link href="doxygen-awesome-sidebar-only.css" rel="stylesheet" type="text/css"/>
-<link href="doxygen-awesome-sidebar-only-darkmode-toggle.css" rel="stylesheet" type="text/css"/>
-<link href="custom.css" rel="stylesheet" type="text/css"/>
-<link href="custom-alternative.css" rel="stylesheet" type="text/css"/>
-</head>
-<body>
-    <!-- https://tholman.com/github-corners/ -->
-    <a href="https://github.com/CefView/QCefView" class="github-corner" title="View source on GitHub" target="_blank"
-        rel="noopener noreferrer">
-        <svg viewBox="0 0 250 250" width="40" height="40"
-            style="position: absolute; top: 0; border: 0; right: 0; z-index: 99;" aria-hidden="true">
-            <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
-            <path
-                d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2"
-                fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>
-            <path
-                d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z"
-                fill="currentColor" class="octo-body"></path>
-        </svg></a>
     <style>
         .github-corner:hover .octo-arm {
             animation: octocat-wave 560ms ease-in-out
@@ -80,14 +54,46 @@
             }
         }
     </style>
-    <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="cookie.js"></script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+    <link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only-darkmode-toggle.css" rel="stylesheet" type="text/css"/>
+<link href="custom.css" rel="stylesheet" type="text/css"/>
+<link href="custom-alternative.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+    <a href="https://github.com/CefView/QCefView" class="github-corner" title="View source on GitHub" target="_blank"
+        rel="noopener noreferrer">
+        <svg viewBox="0 0 250 250" width="40" height="40"
+            style="position: absolute; top: 0; border: 0; right: 0; z-index: 99;" aria-hidden="true">
+            <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
+            <path
+                d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2"
+                fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>
+            <path
+                d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z"
+                fill="currentColor" class="octo-body"></path>
+        </svg>
+    </a>
+    <!-- do not remove this div, it is closed by doxygen! -->
+    <div id="top">
         <div id="titlearea">
             <table cellspacing="0" cellpadding="0">
                 <tbody>
-                    <tr style="height: 56px;">
+                    <tr>
+                        <td id="projectlogo"><img alt="Logo" src="logo.png" /></td>
                         <td id="projectalign" style="padding-left: 0.5em;">
-                            <div id="projectname">QCefView
+                            <div id="projectname">
+                                QCefView&#160;<span id="projectnumber">1.0.7</span>
                             </div>
+                            <div id="projectbrief">A QWidget-based WebView Component Integrated with CEF</div>
                         </td>
                     </tr>
                 </tbody>
@@ -157,7 +163,6 @@ $(function(){initNavTree('class_q_cef_view.html',''); initResizable(true); });
 <div class="header">
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
-<a href="#pub-slots">Public Slots</a> &#124;
 <a href="#signals">Signals</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
@@ -177,11 +182,6 @@ Public Types</h2></td></tr>
 <tr class="memitem:a9963d810f8aa71b45b1b10f0abbe8787" id="r_a9963d810f8aa71b45b1b10f0abbe8787"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a9963d810f8aa71b45b1b10f0abbe8787">CefWindowOpenDisposition</a> </td></tr>
 <tr class="memdesc:a9963d810f8aa71b45b1b10f0abbe8787"><td class="mdescLeft">&#160;</td><td class="mdescRight">Represents the CEF pop-up windows open disposition.  <a href="#a9963d810f8aa71b45b1b10f0abbe8787">More...</a><br /></td></tr>
 <tr class="separator:a9963d810f8aa71b45b1b10f0abbe8787"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-slots" name="pub-slots"></a>
-Public Slots</h2></td></tr>
-<tr class="memitem:a9b1b42857e38a9f5c6c810fd51593788" id="r_a9b1b42857e38a9f5c6c810fd51593788"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a9b1b42857e38a9f5c6c810fd51593788">setFocus</a> ()</td></tr>
-<tr class="separator:a9b1b42857e38a9f5c6c810fd51593788"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="signals" name="signals"></a>
 Signals</h2></td></tr>
@@ -323,9 +323,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:adf944b4ec19dc62e6703b35f62c8cdd5" id="r_adf944b4ec19dc62e6703b35f62c8cdd5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#adf944b4ec19dc62e6703b35f62c8cdd5">allowDrag</a> () const</td></tr>
 <tr class="memdesc:adf944b4ec19dc62e6703b35f62c8cdd5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Indicates whether drag operations are allowed.  <br /></td></tr>
 <tr class="separator:adf944b4ec19dc62e6703b35f62c8cdd5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a61ad737cd2354021f8310f323f4f8ada" id="r_a61ad737cd2354021f8310f323f4f8ada"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a61ad737cd2354021f8310f323f4f8ada">setFocus</a> (Qt::FocusReason reason)</td></tr>
-<tr class="memdesc:a61ad737cd2354021f8310f323f4f8ada"><td class="mdescLeft">&#160;</td><td class="mdescRight">Please refer to QWidget::setFocus.  <br /></td></tr>
-<tr class="separator:a61ad737cd2354021f8310f323f4f8ada"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a497e1bc42d6283557f6a180b058ab3cf" id="r_a497e1bc42d6283557f6a180b058ab3cf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a497e1bc42d6283557f6a180b058ab3cf">setZoomLevel</a> (double level)</td></tr>
+<tr class="memdesc:a497e1bc42d6283557f6a180b058ab3cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets zoom level.  <br /></td></tr>
+<tr class="separator:a497e1bc42d6283557f6a180b058ab3cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf898d01d9a81f8bdae1897e7898ee48" id="r_aaf898d01d9a81f8bdae1897e7898ee48"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aaf898d01d9a81f8bdae1897e7898ee48">zoomLevel</a> ()</td></tr>
+<tr class="memdesc:aaf898d01d9a81f8bdae1897e7898ee48"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the zoom level value.  <br /></td></tr>
+<tr class="separator:aaf898d01d9a81f8bdae1897e7898ee48"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af25a011c126a9bb5dc3df99756a75368" id="r_af25a011c126a9bb5dc3df99756a75368"><td class="memItemLeft" align="right" valign="top">QVariant&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#af25a011c126a9bb5dc3df99756a75368">inputMethodQuery</a> (Qt::InputMethodQuery query) const override</td></tr>
 <tr class="memdesc:af25a011c126a9bb5dc3df99756a75368"><td class="mdescLeft">&#160;</td><td class="mdescRight">Please refer to QWidget::inputMethodQuery.  <br /></td></tr>
 <tr class="separator:af25a011c126a9bb5dc3df99756a75368"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -359,6 +362,9 @@ Protected Member Functions</h2></td></tr>
 <tr class="memitem:ad88e5a99ad808b7a911b58ba9ed9b838" id="r_ad88e5a99ad808b7a911b58ba9ed9b838"><td class="memItemLeft" align="right" valign="top">QPaintEngine *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ad88e5a99ad808b7a911b58ba9ed9b838">paintEngine</a> () const override</td></tr>
 <tr class="memdesc:ad88e5a99ad808b7a911b58ba9ed9b838"><td class="mdescLeft">&#160;</td><td class="mdescRight">Please refer to QWidget::paintEngine.  <br /></td></tr>
 <tr class="separator:ad88e5a99ad808b7a911b58ba9ed9b838"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa205502bb5238e6e2ce727046ed8a9b8" id="r_aa205502bb5238e6e2ce727046ed8a9b8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aa205502bb5238e6e2ce727046ed8a9b8">paintEvent</a> (QPaintEvent *<a class="el" href="#a2c33acd395e7f4adecbef1bf67b7680c">event</a>) override</td></tr>
+<tr class="memdesc:aa205502bb5238e6e2ce727046ed8a9b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Please refer to QWidget::paintEvent.  <br /></td></tr>
+<tr class="separator:aa205502bb5238e6e2ce727046ed8a9b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2c33acd395e7f4adecbef1bf67b7680c" id="r_a2c33acd395e7f4adecbef1bf67b7680c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a2c33acd395e7f4adecbef1bf67b7680c">event</a> (QEvent *event) override</td></tr>
 <tr class="separator:a2c33acd395e7f4adecbef1bf67b7680c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -1121,6 +1127,51 @@ Protected Member Functions</h2></td></tr>
 
 <p>Indicates whether drag operations are allowed. </p>
 <dl class="section return"><dt>Returns</dt><dd>true if drag operations are permitted; otherwise, false.</dd></dl>
+
+</div>
+</div>
+<a id="a497e1bc42d6283557f6a180b058ab3cf" name="a497e1bc42d6283557f6a180b058ab3cf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a497e1bc42d6283557f6a180b058ab3cf">&#9670;&#160;</a></span>setZoomLevel()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void QCefView::setZoomLevel </td>
+          <td>(</td>
+          <td class="paramtype">double</td>          <td class="paramname"><span class="paramname"><em>level</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets zoom level. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">level</td><td>The zoom level value.</td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="aaf898d01d9a81f8bdae1897e7898ee48" name="aaf898d01d9a81f8bdae1897e7898ee48"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf898d01d9a81f8bdae1897e7898ee48">&#9670;&#160;</a></span>zoomLevel()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double QCefView::zoomLevel </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Get the zoom level value. </p>
+<dl class="section return"><dt>Returns</dt><dd>the zoom level value.</dd></dl>
 
 </div>
 </div>
@@ -2069,25 +2120,6 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a61ad737cd2354021f8310f323f4f8ada" name="a61ad737cd2354021f8310f323f4f8ada"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a61ad737cd2354021f8310f323f4f8ada">&#9670;&#160;</a></span>setFocus() <span class="overload">[1/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void QCefView::setFocus </td>
-          <td>(</td>
-          <td class="paramtype">Qt::FocusReason</td>          <td class="paramname"><span class="paramname"><em>reason</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Please refer to QWidget::setFocus. </p>
-
-</div>
-</div>
 <a id="af25a011c126a9bb5dc3df99756a75368" name="af25a011c126a9bb5dc3df99756a75368"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af25a011c126a9bb5dc3df99756a75368">&#9670;&#160;</a></span>inputMethodQuery()</h2>
 
@@ -2115,31 +2147,6 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a9b1b42857e38a9f5c6c810fd51593788" name="a9b1b42857e38a9f5c6c810fd51593788"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9b1b42857e38a9f5c6c810fd51593788">&#9670;&#160;</a></span>setFocus <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void QCefView::setFocus </td>
-          <td>(</td>
-          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel slot">slot</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
 <a id="ad88e5a99ad808b7a911b58ba9ed9b838" name="ad88e5a99ad808b7a911b58ba9ed9b838"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad88e5a99ad808b7a911b58ba9ed9b838">&#9670;&#160;</a></span>paintEngine()</h2>
 
@@ -2164,6 +2171,39 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Please refer to QWidget::paintEngine. </p>
+
+</div>
+</div>
+<a id="aa205502bb5238e6e2ce727046ed8a9b8" name="aa205502bb5238e6e2ce727046ed8a9b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa205502bb5238e6e2ce727046ed8a9b8">&#9670;&#160;</a></span>paintEvent()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void QCefView::paintEvent </td>
+          <td>(</td>
+          <td class="paramtype">QPaintEvent *</td>          <td class="paramname"><span class="paramname"><em>event</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel override">override</span><span class="mlabel protected">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Please refer to QWidget::paintEvent. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">event</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
