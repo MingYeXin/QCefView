@@ -309,6 +309,8 @@ QCefViewPrivate::destroyCefBrowser()
 
   qDebug() << "destroy browser from native";
 
+  clearJSDialogMap();
+
   if (!isOSRModeEnabled_) {
     // remove from parent, prevent from being destroyed
     if (ncw.qBrowserWidget_) {
@@ -464,6 +466,8 @@ QCefViewPrivate::onCefBrowserCreated(CefRefPtr<CefBrowser> browser, QWindow* win
       layout->addWidget(ncw.qBrowserWidget_);
     }
   }
+
+  emit q->sigCefBrowserCreated();
 }
 
 void
@@ -703,7 +707,7 @@ QCefViewPrivate::onCefWindowGotFocus()
     return;
   }
 
-  qDebug() << "----- " << this << "::onCefWindowGotFocus()";
+  //qDebug() << "----- " << this << "::onCefWindowGotFocus()";-----
 
   if (isOSRModeEnabled_) {
     // update CEF focus status

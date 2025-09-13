@@ -1,4 +1,4 @@
-#include "details/CCefClientDelegate.h"
+﻿#include "details/CCefClientDelegate.h"
 
 #if defined(Q_OS_WINDOWS)
 #include <windows.h>
@@ -57,10 +57,7 @@ CCefClientDelegate::onBeforePopup(CefRefPtr<CefBrowser>& browser,
   auto CefNewPopupValue = CefLifeSpanHandler::WindowOpenDisposition::CEF_WOD_NEW_POPUP;
 #endif
 
-  if (
-      targetDisposition == CefNewPopupValue ||
-      targetDisposition != CefNewPopupValue // 如果通过onBeforeNewBrowserCreate创建新的浏览器的话，window.opener会返回null
-      ) {
+  if (targetDisposition == CefNewPopupValue) {
     // the new browser was created from javascript, we need to conform
     // the CEF pop-up browser lifecycle because CEF need to return the
     // new browser identity to javascript context

@@ -96,6 +96,7 @@ QCefWindow::syncCefWindowPosOnExpose()
     // qDebug() << "----- width:" << windowWidth << " x " << windowScaleFactor << " = " << width;
     // qDebug() << "----- height:" << windowHeight << " x " << windowScaleFactor << " = " << height;
 
+#if 0
     HWND hWnd = (HWND)(cefWindow_->winId());
 
     ::SetWindowPos(hWnd,
@@ -105,6 +106,9 @@ QCefWindow::syncCefWindowPosOnExpose()
                    width,
                    height,
                    SWP_ASYNCWINDOWPOS | SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_NOZORDER | SWP_DEFERERASE);
+#else
+    emit sigResizeCefWindow(width, height);
+#endif
   }
 #endif
 }
@@ -129,6 +133,7 @@ QCefWindow::syncCefWindowPosOnResize()
     // qDebug() << "----- width:" << widgetWidth << " x " << widgetScaleFactor << " = " << width;
     // qDebug() << "----- height:" << widgetHeigth << " x " << widgetScaleFactor << " = " << height;
 
+#if 0
     HWND hWnd = (HWND)(cefWindow_->winId());
 
     ::SetWindowPos(hWnd,
@@ -138,6 +143,9 @@ QCefWindow::syncCefWindowPosOnResize()
                    width,
                    height,
                    SWP_ASYNCWINDOWPOS | SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_NOZORDER | SWP_DEFERERASE);
+#else
+    emit sigResizeCefWindow(width, height);
+#endif
   }
 #endif
 }

@@ -74,7 +74,9 @@ CCefClientDelegate::onJSDialog(CefRefPtr<CefBrowser>& browser,
           // remove from pending map
           pendingJSDialogMap_.remove(&msgBox);
 
-          callback->Continue(true, "");
+          if (callback) {
+            callback->Continue(true, "");
+          }
         });
       return true;
     } break;
