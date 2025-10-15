@@ -76,6 +76,11 @@ public:
   bool isOSRModeEnabled_ = false;
 
   /// <summary>
+  ///
+  /// </summary>
+  bool useQtFileDialog_ = true;
+
+  /// <summary>
   /// Off-screen rendering private data
   /// </summary>
   struct OsrPrivateData
@@ -250,7 +255,7 @@ protected:
 
   void onViewKeyEvent(QKeyEvent* event);
 
-  void onViewMouseEvent(QMouseEvent* event);
+  void onViewMouseEvent(QMouseEvent* event, bool mouseLeave, bool mouseUp);
 
   void onViewWheelEvent(QWheelEvent* event);
 

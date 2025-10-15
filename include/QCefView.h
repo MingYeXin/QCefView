@@ -107,6 +107,12 @@ public:
   ~QCefView();
 
   /// <summary>
+  /// Use qt file dialog?
+  /// </summary>
+  /// <param name="v">True to use qt file dialog; false to use CEF built-in dialogs.</param>
+  void useQtFileDialog(bool v);
+
+  /// <summary>
   /// Clear the js dialog
   /// </summary>
   void clearJSDialogMap();

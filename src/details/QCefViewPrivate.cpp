@@ -182,12 +182,14 @@ QCefViewPrivate::createCefBrowser(const QString& url, const QCefSettingPrivate* 
   // 4. set window info
   CefWindowInfo windowInfo;
   if (isOSRModeEnabled_) {
+    qDebug() << __FUNCTION__ << "OSR mode";
     auto winSize = q->size();
     // set QWidget background
     QColor background = q->palette().color(q->backgroundRole());
     CefViewRendererPtr renderer;
     // if hardware is enabled
     if (setting && setting->hardwareAcceleration_) {
+      qDebug() << __FUNCTION__ << "Use hardware renderer";
 #if CEF_VERSION_MAJOR >= 125
       // create hardware renderer if enabled
       if ((renderer = CefViewRendererFactory::createRenderer(true))) {
@@ -218,6 +220,7 @@ QCefViewPrivate::createCefBrowser(const QString& url, const QCefSettingPrivate* 
     // if hardware renderer is not enabled or failed to create it
     // fall back to software renderer
     if (!osr.pRenderer_) {
+      qDebug() << __FUNCTION__ << "Use software renderer";
       // create software renderer
       if ((renderer = CefViewRendererFactory::createRenderer(false))) {
         // initialize renderer
@@ -1362,7 +1365,7 @@ QCefViewPrivate::onViewKeyEvent(QKeyEvent* event)
 }
 
 void
-QCefViewPrivate::onViewMouseEvent(QMouseEvent* event)
+QCefViewPrivate::onViewMouseEvent(QMouseEvent* event, bool mouseLeave, bool mouseUp)
 {
   if (isOSRModeEnabled_) {
     // OSR mode
@@ -1383,7 +1386,7 @@ QCefViewPrivate::onViewMouseEvent(QMouseEvent* event)
     e.modifiers |= b & Qt::MiddleButton ? EVENTFLAG_MIDDLE_MOUSE_BUTTON : 0;
 
     if (QEvent::MouseMove == event->type()) {
-      pCefBrowser_->GetHost()->SendMouseMoveEvent(e, false);
+      pCefBrowser_->GetHost()->SendMouseMoveEvent(e, mouseLeave);
       return;
     }
 
@@ -1405,12 +1408,12 @@ QCefViewPrivate::onViewMouseEvent(QMouseEvent* event)
     }
 
     if (QEvent::MouseButtonPress == event->type()) {
-      pCefBrowser_->GetHost()->SendMouseClickEvent(e, mbt, false, 1);
+      pCefBrowser_->GetHost()->SendMouseClickEvent(e, mbt, mouseUp, 1);
     } else if (QEvent::MouseButtonDblClick == event->type()) {
-      pCefBrowser_->GetHost()->SendMouseClickEvent(e, mbt, false, 2);
+      pCefBrowser_->GetHost()->SendMouseClickEvent(e, mbt, mouseUp, 2);
     } else if (QEvent::MouseButtonRelease == event->type()) {
       // if the release was generated right after a popup, we must discard it
-      pCefBrowser_->GetHost()->SendMouseClickEvent(e, mbt, true, 1);
+      pCefBrowser_->GetHost()->SendMouseClickEvent(e, mbt, mouseUp, 1);
     }
   }
 }

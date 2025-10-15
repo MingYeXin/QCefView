@@ -21,27 +21,27 @@ CCefClientDelegate::onFileDialog(CefRefPtr<CefBrowser>& browser,
 {
   AcquireAndValidateCefViewPrivateWithReturn(pCefViewPrivate, false);
 
-#if defined(Q_OS_LINUX)
-  // only on Linux we need to implement dialog handler
-  runInMainThread([=]() {
-    QStringList filters;
-    if (!accept_filters.empty()) {
-      for (const auto& filter : accept_filters) {
-        filters << "*" + QString::fromStdString(filter.ToString());
+  if (pCefViewPrivate->useQtFileDialog_) {
+    // implement dialog handler
+    runInMainThread([=]() {
+      QStringList filters;
+      if (!accept_filters.empty()) {
+        for (const auto& filter : accept_filters) {
+          filters << "*" + QString::fromStdString(filter.ToString());
+        }
       }
-    }
-    pCefViewPrivate->onFileDialog(mode,
-                                  title.ToString().c_str(),
-                                  default_file_path.ToString().c_str(),
-                                  filters,
+      pCefViewPrivate->onFileDialog(mode,
+                                    title.ToString().c_str(),
+                                    default_file_path.ToString().c_str(),
+                                    filters,
 #if CEF_VERSION_MAJOR < 102
-                                  selected_accept_filter,
+                                    selected_accept_filter,
 #endif
-                                  callback);
-  });
-  return true;
-#else
-  // for macOS and Windows we use CEF built-in dialogs
-  return false;
-#endif
+                                    callback);
+    });
+    return true;
+  } else {
+    // use CEF built-in dialogs
+    return false;
+  }
 }

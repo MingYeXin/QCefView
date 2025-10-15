@@ -75,11 +75,25 @@ QCefView::~QCefView()
 }
 
 void
+QCefView::useQtFileDialog(bool v)
+{
+  Q_D(QCefView);
+
+#if defined(Q_OS_LINUX)
+  // alway true on Linux
+  d->useQtFileDialog_ = true;
+#else
+  // other system
+  d->useQtFileDialog_ = v;
+#endif
+}
+
+void
 QCefView::clearJSDialogMap()
 {
-  if (d_ptr) {
-    d_ptr->clearJSDialogMap();
-  }
+  Q_D(QCefView);
+
+  d->clearJSDialogMap();
 }
 
 void
@@ -438,12 +452,21 @@ QCefView::event(QEvent* event)
         return true;
       }
     } break;
-    case QEvent::MouseMove:
-    case QEvent::MouseButtonPress:
-    case QEvent::MouseButtonRelease:
+    case QEvent::MouseMove: {
+      QMouseEvent* e = static_cast<QMouseEvent*>(event);
+      d->onViewMouseEvent(e, false, false);
+    } break;
+    case QEvent::MouseButtonPress: {
+      QMouseEvent* e = static_cast<QMouseEvent*>(event);
+      d->onViewMouseEvent(e, false, false);
+    } break;
+    case QEvent::MouseButtonRelease: {
+      QMouseEvent* e = static_cast<QMouseEvent*>(event);
+      d->onViewMouseEvent(e, false, true);
+    } break;
     case QEvent::MouseButtonDblClick: {
       QMouseEvent* e = static_cast<QMouseEvent*>(event);
-      d->onViewMouseEvent(e);
+      d->onViewMouseEvent(e, false, false);
     } break;
     case QEvent::Wheel: {
       QWheelEvent* e = static_cast<QWheelEvent*>(event);
@@ -452,7 +475,7 @@ QCefView::event(QEvent* event)
     case QEvent::Leave: {
       QPoint mousePos = QCursor::pos();
       QMouseEvent moveEvent(QEvent::MouseMove, mousePos, mousePos, Qt::NoButton, Qt::NoButton, Qt::NoModifier);
-      d->onViewMouseEvent(&moveEvent);
+      d->onViewMouseEvent(&moveEvent, true, false);
     } break;
     case QEvent::ContextMenu: {
       QContextMenuEvent* e = static_cast<QContextMenuEvent*>(event);
