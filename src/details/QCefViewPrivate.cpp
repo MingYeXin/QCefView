@@ -14,6 +14,7 @@
 #include <QInputMethodQueryEvent>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QMetaMethod>
 #include <QPainter>
 #include <QRegion>
 #include <QStyleOption>
@@ -598,8 +599,7 @@ QCefViewPrivate::handleLoadError(CefRefPtr<CefBrowser>& browser,
   }
 
   // If the signal was connected then emit the signal and set handled with true to skip the default handler
-  if (q->receivers(
-        SIGNAL(loadError(const QCefBrowserId&, const QCefFrameId&, bool, int, const QString&, const QString&))) > 0) {
+  if (q->isSignalConnected(QMetaMethod::fromSignal(&QCefView::loadError))) {
     auto msg = QString::fromStdString(errorMsg);
     auto url = QString::fromStdString(failedUrl);
     emit q->loadError(browser->GetIdentifier(),
@@ -817,16 +817,12 @@ QCefViewPrivate::onStartDragging(CefRefPtr<CefDragData>& dragData, CefRenderHand
       int h = 0;
       if (auto pngData = image->GetAsPNG(1.0, true, w, h)) {
         QPixmap pixmap;
-#if CEF_VERSION_MAJOR > 109
+#if CEF_VERSION_MAJOR >= 119
         pixmap.loadFromData((const uchar*)(pngData->GetRawData()), (int)(pngData->GetSize()));
 #else
-        size_t pngDataSize = pngData->GetSize();
-        if (pngDataSize > 0) {
-          const uchar* buffer = new uchar[pngDataSize];
-          pngData->GetData((void*)buffer, pngDataSize, 0);
-          pixmap.loadFromData(buffer, (int)(pngDataSize));
-          delete []buffer;
-        }
+        std::vector<uchar> buffer(pngData->GetSize());
+        pngData->GetData(buffer.data(), buffer.size(), 0);
+        pixmap.loadFromData(buffer.data(), static_cast<uint>(buffer.size()));
 #endif
         pixmap.setDevicePixelRatio(scaleFactor());
         drag.setPixmap(pixmap);
@@ -1491,6 +1487,8 @@ QCefViewPrivate::onContextMenuEvent(const QPoint& pos)
 void
 QCefViewPrivate::onDragEnter(QDragEnterEvent* event)
 {
+  FLog();
+
   if (isOSRModeEnabled_ && pCefBrowser_ && pCefBrowser_->GetHost()) {
     osr.allowedDragOperations_ = 0;
 
@@ -1528,6 +1526,8 @@ QCefViewPrivate::onDragEnter(QDragEnterEvent* event)
 void
 QCefViewPrivate::onDragMove(QDragMoveEvent* event)
 {
+  FLog();
+
   if (isOSRModeEnabled_ && pCefBrowser_ && pCefBrowser_->GetHost()) {
     CefMouseEvent e;
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
@@ -1560,6 +1560,8 @@ QCefViewPrivate::onDragMove(QDragMoveEvent* event)
 void
 QCefViewPrivate::onDragLeave(QDragLeaveEvent* event)
 {
+  FLog();
+
   if (isOSRModeEnabled_ && pCefBrowser_ && pCefBrowser_->GetHost()) {
     osr.allowedDragOperations_ = 0;
 
@@ -1570,6 +1572,8 @@ QCefViewPrivate::onDragLeave(QDragLeaveEvent* event)
 void
 QCefViewPrivate::onDrop(QDropEvent* event)
 {
+  FLog();
+
   if (isOSRModeEnabled_ && pCefBrowser_ && pCefBrowser_->GetHost()) {
 
     CefMouseEvent e;
@@ -1852,7 +1856,7 @@ QCefViewPrivate::sendEventNotifyMessage(const QCefFrameId& frameId, const QStrin
 }
 
 bool
-QCefViewPrivate::setPreference(const QString& name, const QVariant& value, const QString& error)
+QCefViewPrivate::setPreference(const QString& name, const QVariant& value, QString& error)
 {
   if (pCefBrowser_) {
     CefRefPtr<CefBrowserHost> host = pCefBrowser_->GetHost();
@@ -1865,7 +1869,7 @@ QCefViewPrivate::setPreference(const QString& name, const QVariant& value, const
 
       CefString e;
       auto r = host->GetRequestContext()->SetPreference(n, v, e);
-      error.fromStdString(e.ToString());
+      error = QString::fromStdString(e.ToString());
       return r;
     }
   }
