@@ -16,11 +16,18 @@ CCefClientDelegate::onDragEnter(CefRefPtr<CefBrowser>& browser,
 
   AcquireAndValidateCefViewPrivateWithReturn(pCefViewPrivate, true);
 
+#if 0
+  // 在主程序中加载了网页，尝试将自定义内容拖拽到网页中，可能会导致软件卡死
+  // 可能是 QDrag 的 exec 接口跟 QEventLoop 的 exec 接口有冲突
   bool allowDrop = false;
   runInMainThreadAndWait([&]() { allowDrop = pCefViewPrivate->shouldAllowDrop(dragData, mask); });
 
   // return true to cancel, false to allow
   return !allowDrop;
+#else
+  // return true to cancel, false to allow
+  return !pCefViewPrivate->shouldAllowDrop(dragData, mask);
+#endif
 }
 
 void
