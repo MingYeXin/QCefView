@@ -22,8 +22,6 @@ FetchContent_Declare(
     SOURCE_DIR "${CMAKE_BINARY_DIR}/_deps/cefviewcore-src-${CEFVIEW_CORE_SRC_DIR_SUFFIX}"
 )
 
-# set folder
-set(CMAKE_FOLDER "QCefView/Core")
 # set CEF version to be used
 # https://cef-builds.spotifycdn.com/index.html
 # https://bitbucket.org/chromiumembedded/cef/wiki/BranchesAndBuilding.md

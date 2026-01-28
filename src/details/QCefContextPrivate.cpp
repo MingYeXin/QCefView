@@ -30,7 +30,7 @@ QCefContextPrivate::QCefContextPrivate(QCoreApplication* app, int argc, char** a
 QCefContextPrivate::~QCefContextPrivate()
 {
   disconnect(&cefWorkerTimer_, SIGNAL(timeout()), this, SLOT(performCefLoopWork()));
-  disconnect(SIGNAL(aboutToQuit()), this, SLOT(onAboutToQuit()));
+  disconnect(this, SLOT(onAboutToQuit()));
 }
 
 CefRefPtr<CefViewBrowserApp>
@@ -166,12 +166,13 @@ QCefContextPrivate::onAboutToQuit()
       // if all browser were closed and there is only one reference to the
       // CefBrowserClient object (only referred by QCefContextPrivate instance),
       // we can quit safely
-      if (pApp_->IsSafeToExit())
+      if (pApp_->IsSafeToExit()) {
         exitCleanLoop.quit();
+      }
     });
 
     // start the timer
-    exitCheckTimer.start(0);
+    exitCheckTimer.start(1);
 
     // enter the event loop
     exitCleanLoop.exec();
