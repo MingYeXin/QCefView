@@ -18,7 +18,18 @@ QCefContextPrivate::initializeCef(const QCefConfig* config)
   ::GetModuleFileNameW(nullptr, modPath.data(), static_cast<DWORD>(modPath.size()));
   ::PathRemoveFileSpecW(modPath.data());
   ::PathCombineW(modPath.data(), modPath.data(), L"CefView");
+#if 0
   ::SetDllDirectoryW(modPath.data());
+#else
+  // 设置默认搜索目录集
+  // LOAD_LIBRARY_SEARCH_DEFAULT_DIRS: 包含以下三个
+  // LOAD_LIBRARY_SEARCH_APPLICATION_DIR: 应用程序目录
+  // LOAD_LIBRARY_SEARCH_SYSTEM32: Windows 系统目录
+  // LOAD_LIBRARY_SEARCH_USER_DIRS: 用户自定义目录
+  SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+  // 添加自定义搜索目录
+  AddDllDirectory(modPath.data());
+#endif
 
 #if CEF_VERSION_MAJOR < 112
   // Enable High-DPI support on Windows 7 or newer.
